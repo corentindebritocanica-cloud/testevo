@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Configurateur Gamme Getinge Lancer Evolab V21.0</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root { --bg-site: #1b294a; --getinge-blue: #18274a; --ocean: #31b7bc; --rose: #e11d48; --amber: #f59e0b; --ocean-dark: #238b8e; --snow: #e9e4e3; --clay: #bfb1ac; --granite: #595857; --midnight: #495a6b; --panel: #ffffff; --bg-light: #f4f2f1; }
+        body { font-family: 'Getinge Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif; background: var(--bg-site); margin: 0; display: flex; height: 100vh; overflow: hidden; color: var(--granite); }
+        .top-controls { position: fixed; top: 20px; right: 25px; display: flex; gap: 8px; z-index: 500; }
+        .lang-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.8rem; color: white; transition: 0.2s; backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center;}
+        .lang-btn:hover { background: rgba(255,255,255,0.2); }
+        .lang-btn.active { background: var(--ocean); color: white; border-color: var(--ocean); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .btn-home { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.4); }
+        .btn-home:hover { background: var(--getinge-blue); border-color: white; }
+        .fullscreen-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 200; background: var(--bg-site); background-image: radial-gradient(circle, #2c3e50 0%, var(--bg-site) 100%); overflow-y: auto; padding: 50px 0;}
+        .view-active { display: flex !important; }
+        .title-hero { color: white; font-size: 2.5rem; margin-bottom: 40px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.1em; text-align: center; }
+        .title-hero span { color: var(--ocean); }
+        .card-container { display: flex; gap: 30px; max-width: 1200px; flex-wrap: wrap; justify-content: center; align-items: stretch;}
+        .choice-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 40px; width: 320px; text-align: center; cursor: pointer; transition: 0.3s; backdrop-filter: blur(10px); color: white; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;}
+        .choice-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.1); border-color: var(--ocean); box-shadow: 0 15px 30px rgba(0,0,0,0.3); }
+        .choice-card h2 { color: var(--ocean); margin: 0 0 15px 0; font-size: 1.3rem; }
+        .choice-card p { font-size: 0.85rem; color: var(--snow); opacity: 0.8; margin: 0; line-height: 1.4; flex: 1;}
+        .machine-picker .card-container { gap: 20px; max-width: 1400px; }
+        .machine-card { width: 300px; padding: 25px; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02);}
+        .interactive-svg-container { position: relative; width: 100%; max-width: 180px; margin: 0 auto; }
+        .machine-card svg { width: 130px; height: auto; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2)); transition: transform 0.3s ease;}
+        .machine-card:hover svg { transform: scale(1.03); }
+        #workspace { width: 100%; height: 100%; display: none; flex-direction: row; }
+        .sidebar { width: 380px; min-width: 380px; background: var(--panel); padding: 25px 20px; display: flex; flex-direction: column; align-items: center; overflow-y: auto; overflow-x: hidden; box-shadow: 10px 0 25px rgba(0,0,0,0.3); z-index: 10; }
+        h1 { font-size: 1.15rem; color: var(--getinge-blue); margin: 0 0 20px 0; font-weight: 800; text-transform: uppercase; text-align: center; letter-spacing: 0.05em; }
+        .nav-pages { display: flex; gap: 5px; width: 100%; margin-bottom: 25px; }
+        .nav-btn { flex: 1; padding: 12px 5px; background: var(--bg-light); border: none; cursor: pointer; font-weight: bold; font-size: 0.7rem; border-radius: 8px; color: var(--midnight); transition: 0.2s;}
+        .nav-btn.active { background: var(--getinge-blue); color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+        .field { display: flex; flex-direction: column; align-items: flex-start; width: 100%; }
+        label { font-size: 0.55rem; font-weight: bold; color: var(--midnight); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.05em; }
+        input[type="number"], input[type="text"], select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--snow); border-radius: 6px; font-weight: bold; font-size: 0.8rem; color: var(--getinge-blue); background: var(--bg-light); transition: 0.2s;}
+        input:focus, select:focus { outline: none; border-color: var(--ocean); background: white; box-shadow: 0 0 0 2px rgba(49, 183, 188, 0.15); }
+        .preset-select { background: rgba(49, 183, 188, 0.05); border: 1px solid rgba(49, 183, 188, 0.3) !important; color: var(--ocean-dark); cursor: pointer; text-align: center;}
+        details.adv-settings { width: 100%; background: var(--bg-light); border-radius: 8px; margin-bottom: 25px; border: 1px solid var(--snow); transition: all 0.3s ease; }
+        details.adv-settings summary { font-size: 0.65rem; font-weight: bold; color: var(--midnight); text-transform: uppercase; padding: 12px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: transparent; letter-spacing: 0.05em; outline: none; user-select: none; }
+        details.adv-settings summary::-webkit-details-marker { display: none; }
+        details.adv-settings summary::after { content: '+'; font-size: 1.2rem; font-weight: normal; color: var(--ocean); }
+        details.adv-settings[open] summary::after { content: '−'; }
+        .details-content { padding: 15px; border-top: 1px solid var(--snow); display: flex; flex-direction: column; gap: 15px; }
+        .info-icon { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; background: rgba(49, 183, 188, 0.2); color: var(--ocean-dark); border-radius: 50%; font-size: 0.55rem; margin-left: 5px; cursor: help; font-weight: bold; }
+        .icon-red { background: rgba(225, 29, 72, 0.2); color: #e11d48; }
+        [data-tooltip] { position: relative; cursor: help; }
+        label[data-tooltip] { display: flex; align-items: center; width: max-content; }
+        [data-tooltip]:hover::after { content: attr(data-tooltip); position: absolute; bottom: 100%; width: max-content; max-width: 250px; white-space: normal; background: var(--getinge-blue); color: white; padding: 8px 10px; border-radius: 6px; font-size: 0.65rem; line-height: 1.3; z-index: 100; pointer-events: none; margin-bottom: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-transform: none; font-weight: normal; letter-spacing: normal;}
+        .tt-left:hover::after { left: 0; } .tt-right:hover::after { right: 0; } .tt-center:hover::after { left: 50%; transform: translateX(-50%); } .tt-bottom:hover::after { bottom: auto; top: 100%; margin-bottom: 0; margin-top: 8px; }
+        .glass-setup-box { width: 100%; background: #ffffff; border: 1px solid var(--snow); border-radius: 10px; padding: 15px; box-sizing: border-box; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+        .tabs { display: flex; width: 100%; margin-bottom: 15px; background: var(--bg-light); border-radius: 6px; padding: 3px; box-sizing: border-box; }
+        .tab-btn { flex: 1; padding: 8px; background: transparent; border: none; cursor: pointer; font-weight: bold; color: var(--midnight); font-size: 0.65rem; border-radius: 4px; transition: 0.2s; }
+        .tab-btn.active { background: white; color: var(--ocean); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .diam-row { display:grid; grid-template-columns: 20px 1fr 1fr; gap:10px; width:100%; align-items: center; margin-bottom: 8px;}
+        .diam-row label { margin-bottom: 0; text-align: left;}
+        .diam-row input { text-align: center; }
+        .spec-item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--snow); font-size: 0.75rem; }
+        .spec-item-row:last-child { border-bottom: none; }
+        .spec-item-info { display: flex; flex-direction: column; }
+        .spec-item-name { font-weight: bold; color: var(--getinge-blue); margin-bottom:3px; display:flex; align-items:center; flex-wrap:wrap;}
+        .spec-item-dim { font-size: 0.65rem; color: var(--granite); }
+        .spec-qty-controls { display: flex; align-items: center; gap: 5px; }
+        .spec-qty-btn { width: 26px; height: 26px; border-radius: 4px; border: none; background: var(--ocean); color: white; cursor: pointer; font-weight: bold; font-size: 1.2rem; padding:0; display:flex; align-items:center; justify-content:center;}
+        .spec-qty-input { width: 45px !important; text-align: center; padding: 4px !important; font-size:0.85rem !important; border: 1px solid var(--clay) !important; font-weight: 800;}
+        .toggle-box { background: rgba(255,255,255,0.5); padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; border: 1px dashed var(--clay); display: flex; justify-content: center;}
+        .check-item { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; color: var(--granite); cursor: pointer; margin-bottom:0;}
+        .btn-group { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: auto; padding-top: 15px;}
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.75rem; transition: 0.2s; letter-spacing: 0.05em; }
+        .btn-main { background: var(--ocean); color: white; box-shadow: 0 4px 12px rgba(49, 183, 188, 0.3); }
+        .btn-main:hover { background: var(--ocean-dark); transform: translateY(-1px); box-shadow: 0 6px 15px rgba(49, 183, 188, 0.4);}
+        .btn-ghost { background: transparent; color: var(--midnight); border: 1px solid var(--snow); }
+        .btn-ghost:hover { background: var(--bg-light); }
+        .stats-box { width: 100%; background: var(--bg-light); color: var(--getinge-blue); padding: 15px; border-radius: 8px; font-size: 0.75rem; box-sizing: border-box; text-align: center; border: 1px solid var(--snow); }
+        .viewport { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; background: transparent; }
+        .canvas-wrapper { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        canvas { background: white; border-radius: 4px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); cursor: grab; }
+        canvas:active { cursor: grabbing; }
+        .right-panels-wrapper { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 340px; height: 90vh; display: flex; flex-direction: column; gap: 15px; z-index: 50; }
+        .volet { display: flex; flex-direction: column; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; backdrop-filter: blur(10px); color: white; overflow: hidden; transition: flex 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .volet:not(.collapsed) { flex: 1; }
+        .volet.collapsed { flex: 0 0 auto !important; height: 43px; } 
+        .volet-header { background: var(--ocean); padding: 15px; font-weight: bold; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; letter-spacing: 0.05em; cursor: pointer; user-select: none; transition: 0.2s;}
+        .volet-header:hover { background: var(--ocean-dark); }
+        .volet-header span.icon { font-size: 0.9rem; transition: transform 0.3s; }
+        .volet.collapsed .volet-header span.icon { transform: rotate(-180deg); }
+        .volet-content { flex: 1; overflow-y: auto; padding: 15px; font-size: 0.75rem; display: flex; flex-direction: column; }
+        .volet-content::-webkit-scrollbar { width: 6px; }
+        .volet-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 3px; }
+        .glass-cat-title { display: flex; align-items: center; gap: 10px; color: var(--ocean); font-weight: 800; margin-top: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; text-transform: uppercase; }
+        .glass-item { padding: 8px 10px; color: var(--snow); display: flex; justify-content: space-between; align-items: center; border-radius: 6px; transition: 0.2s; margin-bottom: 4px;}
+        .glass-item:hover { background: rgba(255,255,255,0.1) !important; }
+        #machinesContent { align-items: center; gap: 30px; padding-top: 20px;}
+        .machine-result-item { display: flex; flex-direction: column; align-items: center; width: 100%; border-bottom: 1px dashed rgba(255,255,255,0.2); padding-bottom: 25px;}
+        .machine-result-item:last-child { border-bottom: none; }
+        .machine-result-title { font-weight: bold; color: var(--ocean); font-size: 0.9rem; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; text-align: center;}
+        .basket-rect { cursor: grab; transition: fill 0.2s; }
+        .basket-rect:active { cursor: grabbing; fill: #f59e0b; }
+        .level-target { cursor: pointer; transition: 0.2s; }
+        .level-target:hover { stroke-width: 3; stroke: #f59e0b; }
+        .export-btn-fixed { position: fixed; bottom: 25px; right: 25px; background: var(--grass); color: white; padding: 12px 24px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; box-shadow: 0 8px 16px rgba(0,0,0,0.4); border: none; cursor: pointer; z-index: 20; width: auto !important; transition: 0.2s;}
+        .export-btn-fixed:hover { background: #82a344; transform: translateY(-2px); box-shadow: 0 12px 20px rgba(0,0,0,0.5);}
+        .version-tag { position: fixed; bottom: 5px; right: 10px; color: rgba(255,255,255,0.3); font-size: 0.65rem; font-weight: bold; z-index: 50; pointer-events:none; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(24, 39, 74, 0.85); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px);}
+        .modal-content { background: white; padding: 30px; border-radius: 16px; width: 850px; max-width: 90vw; display: flex; gap: 30px; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.5); max-height: 90vh; overflow:hidden;}
+        .modal-content.row-layout { flex-direction: row; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--snow); padding-bottom: 15px; margin-bottom: 15px;}
+        .modal-header h3 { margin: 0; color: var(--getinge-blue); font-size: 1.2rem; text-transform: uppercase; }
+        .modal-close { background: none; border: none; font-size: 1.5rem; color: var(--granite); cursor: pointer; line-height: 1; padding: 0;}
+        .modal-body { flex: 1; overflow-y: auto; padding-right: 10px; }
+        .modal-footer { border-top: 1px solid var(--snow); padding-top: 15px; display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;}
+        details.glass-category-details { background: var(--bg-light); border-radius: 8px; border: 1px solid var(--snow); margin-bottom: 10px; transition: 0.2s;}
+        details.glass-category-details summary { padding: 12px 15px; font-weight: bold; color: var(--ocean); cursor: pointer; user-select: none; font-size: 0.9rem; text-transform: uppercase; list-style: none; display: flex; justify-content: space-between; align-items: center;}
+        details.glass-category-details summary::-webkit-details-marker { display: none; }
+        details.glass-category-details summary::after { content: '+'; font-size: 1.5rem; line-height: 0.5; color: var(--ocean); }
+        details.glass-category-details[open] summary::after { content: '−'; }
+        .glass-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; padding: 15px; background: white; border-top: 1px solid var(--snow); border-radius: 0 0 8px 8px;}
+        .glass-picker-card { border: 1px solid var(--snow); border-radius: 8px; padding: 15px 10px; display: flex; flex-direction: column; align-items: center; text-align: center; background: var(--bg-light); transition: 0.2s;}
+        .glass-picker-card:hover { border-color: var(--ocean); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .glass-picker-card strong { color: var(--getinge-blue); font-size: 0.9rem; margin: 8px 0 2px 0; }
+        .glass-picker-card span { color: var(--midnight); font-size: 0.7rem; margin-bottom: 12px; }
+        .auto-glass-input { width: 70px !important; text-align: center; font-size: 1.1rem !important; padding: 6px !important; border: 1px solid var(--clay) !important; font-weight: 800;}
+        .modal-form { flex: 1; display: flex; flex-direction: column; gap: 15px; }
+        .modal-preview-box { width: 320px; background: var(--bg-light); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; border: 1px solid var(--snow); }
+        #previewImg { max-width: 100%; max-height: 400px; object-fit: contain; box-shadow: 0 4px 15px rgba(0,0,0,0.1); background: white; border-radius: 4px;}
+    </style>
+</head>
+<body>
+<div class="version-tag">V21.0 (Architecture Laveur & D&D Collision)</div>
+<div class="top-controls">
+    <button class="lang-btn btn-home tt-bottom tt-center" id="btnHome" onclick="app.setMode('LANDING')" data-i18n="backHome" data-tooltip="Retour à la page d'accueil">HOME</button>
+    <button class="lang-btn active" id="btnLangFr" onclick="app.setUILanguage('fr')">FR</button>
+    <button class="lang-btn" id="btnLangEn" onclick="app.setUILanguage('en')">EN</button>
+</div>
+<div id="view-landing" class="fullscreen-view view-active">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/f/f0/Getinge.svg" alt="Getinge Logo" style="height: 60px; margin-bottom: 40px; filter: brightness(0) invert(1);">
+    <h1 class="title-hero">Configurateur Gamme <span>Evolab</span></h1>
+    <div class="card-container">
+        <div class="choice-card" onclick="app.setMode('INTERNAL')">
+            <h2 data-i18n="modeInternalTitle">USAGE INTERNE</h2>
+            <p data-i18n="modeInternalDesc">Accès complet. Tous les laveurs, réglages avancés de grilles et cotes sur-mesure.</p>
+        </div>
+        <div class="choice-card" onclick="app.setMode('CLIENT_MENU')">
+            <h2 data-i18n="modeClientTitle">CONFIGURATION CLIENT</h2>
+            <p data-i18n="modeClientDesc">Mode assisté. Modélisez votre panier par verrerie, base ou par choix de machine.</p>
+        </div>
+    </div>
+</div>
+<div id="view-client-menu" class="fullscreen-view">
+    <h1 class="title-hero">Configuration <span>Assistée</span></h1>
+    <div class="card-container">
+        <div class="choice-card" onclick="app.openAutoPopup()">
+            <h2 data-i18n="clientAutoTitle">Par Verrerie</h2>
+            <p data-i18n="clientAutoDesc">Sélectionnez la verrerie désirée. Le logiciel calcule la base et indique les laveurs compatibles.</p>
+        </div>
+        <div class="choice-card" onclick="app.openManualPopup()">
+            <h2 data-i18n="clientManualTitle">Par Base Prédéfinie</h2>
+            <p data-i18n="clientManualDesc">Choisissez un panier standard (20, 49, 100 inj.) et remplissez-le.</p>
+        </div>
+        <div class="choice-card" onclick="app.setMode('MACHINE_PICKER')">
+            <h2 data-i18n="clientMachineTitle">Par Laveur</h2>
+            <p data-i18n="clientMachineDesc">Choisissez d'abord votre machine, le logiciel filtrera la verrerie selon les hauteurs disponibles.</p>
+        </div>
+    </div>
+    <button class="btn-ghost" style="margin-top: 40px; color: white; border-color: rgba(255,255,255,0.4);" onclick="app.setMode('LANDING')" data-i18n="expCancel">RETOUR</button>
+</div>
+<div id="view-machine-picker" class="fullscreen-view machine-picker">
+    <h1 class="title-hero">Sélectionnez votre <span>Laveur</span></h1>
+    <div class="card-container" id="machine-picker-list"></div>
+    <button class="btn-ghost" style="margin-top: 50px; color: white; border-color: rgba(255,255,255,0.4);" onclick="app.setMode('CLIENT_MENU')" data-i18n="expCancel">ANNULER</button>
+</div>
+<div id="popup-method-picker" class="modal-overlay">
+    <div class="modal-content" style="width: 600px; text-align: center;">
+        <h3 style="color:var(--getinge-blue); font-size:1.5rem; text-transform:uppercase; margin-bottom: 30px;" id="lblMethodTitle">Laveur Sélectionné</h3>
+        <p style="color:var(--midnight); margin-bottom: 30px;" data-i18n="methodDesc">Comment souhaitez-vous configurer le panier pour cette machine ?</p>
+        <div style="display:flex; gap: 20px; justify-content: center;">
+            <button class="btn-main" style="padding: 20px; font-size:1.1rem;" onclick="app.openAutoPopupFromMachine()" data-i18n="clientAutoTitle">Par Verrerie</button>
+            <button class="btn-ghost" style="padding: 20px; font-size:1.1rem;" onclick="app.openManualPopupFromMachine()" data-i18n="clientManualTitle">Par Base Prédéfinie</button>
+        </div>
+        <button class="modal-close" style="position:absolute; top:20px; right:20px;" onclick="app.closePopups()">×</button>
+    </div>
+</div>
+<div id="popup-auto-glassware" class="modal-overlay">
+    <div class="modal-content" style="width: 1100px; max-width: 95vw;">
+        <div class="modal-header">
+            <h3 data-i18n="autoPopupTitle">Sélection de la Verrerie</h3>
+            <div style="display:flex; align-items:center; gap:20px;">
+                <label class="check-item tt-bottom tt-center icon-red" style="font-weight:bold; font-size:0.8rem; border: 1px solid #e11d48; padding: 4px 8px; border-radius: 6px; white-space: nowrap;" id="lblExpertAuto" data-tooltip="Masque le filtrage strict Ø6/Ø8/Ø12">
+                    <input type="checkbox" id="isExpertModeAuto" onchange="app.toggleExpertModeAuto()"><span data-i18n="expertMode">DÉVERROUILLER RÈGLES</span><span class="info-icon">!</span>
+                </label>
+                <button class="modal-close" onclick="app.closePopups()">×</button>
+            </div>
+        </div>
+        <div class="modal-body" style="display: flex; gap: 20px; height: 60vh; overflow: hidden; padding: 0;">
+            <div style="flex: 2; overflow-y: auto; padding-right: 10px;" id="auto-glassware-list"></div>
+            <div style="flex: 1; background: var(--bg-light); border-radius: 8px; padding: 20px; overflow-y: auto; border: 1px solid var(--snow); display: flex; flex-direction: column;">
+                <h4 style="margin-top:0; color:var(--ocean); text-align:center; font-size:1.1rem; border-bottom:2px solid var(--snow); padding-bottom:10px;" data-i18n="liveSummaryTitle">SÉLECTION (LIVE)</h4>
+                <div id="auto-summary-list" style="font-size: 0.85rem; flex: 1; overflow-y: auto;">
+                    <div style="color:var(--clay); font-style:italic; text-align:center; padding-top:40px;" data-i18n="emptyList">Aucune verrerie sélectionnée</div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-ghost" style="width:auto;" onclick="app.closePopups()" data-i18n="expCancel">ANNULER</button>
+            <button class="btn-main" style="width:auto; padding: 12px 30px;" onclick="app.runAutoSolver()" data-i18n="btnCalculate">Générer le Panier</button>
+        </div>
+    </div>
+</div>
+<div id="popup-rack-select" class="modal-overlay">
+    <div class="modal-content" style="width: 500px;">
+        <div class="modal-header">
+            <h3 data-i18n="rackPopupTitle">Choisissez une base de départ</h3>
+            <button class="modal-close" onclick="app.closePopups()">×</button>
+        </div>
+        <div class="modal-body">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn-ghost" onclick="app.launchManualBase('base100')">Panier S/M - Base 100 INJ</button>
+                <button class="btn-ghost" onclick="app.launchManualBase('base49')">Panier S/M - Base 49 INJ</button>
+                <button class="btn-ghost" onclick="app.launchManualBase('base20')">Panier S/M - Base 20 INJ</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="exportModal" class="modal-overlay">
+    <div class="modal-content row-layout">
+        <div class="modal-form">
+            <h3 style="margin:0 0 5px 0; color:var(--getinge-blue); font-size:1.2rem; text-transform:uppercase;" data-i18n="exportModalTitle">Options d'exportation</h3>
+            <div class="field" style="margin-bottom: 10px;"><label data-i18n="expProjTitle">Titre du projet</label><input type="text" id="expTitle" style="text-align: left;" oninput="app.updatePreview()"></div>
+            <div class="field-grid" style="margin-bottom: 10px;">
+                <div class="field"><label data-i18n="expFormat">Format d'export</label><select id="expFormat"><option value="png" data-i18n="optPng">Image (PNG)</option><option value="pdf" data-i18n="optPdf">Document (PDF)</option></select></div>
+                <div class="field"><label data-i18n="expOrient">Orientation</label><select id="expOrientation" onchange="app.updatePreview()"><option value="p" data-i18n="optPort">Portrait</option><option value="l" data-i18n="optLand">Paysage</option></select></div>
+                <div class="field"><label data-i18n="expLang">Langue (Export)</label><select id="expLang" onchange="app.updatePreview()"><option value="fr">Français</option><option value="en">English</option></select></div>
+            </div>
+            <div style="background: var(--bg-light); padding: 15px; border-radius: 8px; display:flex; flex-direction:column; gap:10px; border: 1px solid var(--snow);">
+                <label class="check-item tt-bottom tt-left" id="lblExpCote" data-tooltip="Affiche les dimensions"><input type="checkbox" id="expShowCote" checked onchange="app.updatePreview()"> <span data-i18n="expCote">AFFICHER DIMENSIONS</span></label>
+                <label class="check-item"><input type="checkbox" id="expShowTech" checked onchange="app.updatePreview()"> <span data-i18n="expTech">Afficher détails techniques</span></label>
+                <label class="check-item"><input type="checkbox" id="expShowComp" checked onchange="app.updatePreview()"> <span data-i18n="expComp">Afficher verreries</span></label>
+                <hr style="width:100%; border:0; border-top:1px solid #ddd; margin:4px 0;">
+                <label class="check-item" style="color:var(--grass); font-weight:bold;"><input type="checkbox" id="expSaveHtml" checked> <span data-i18n="expHtml">SAUVEGARDER COPIE HTML</span></label>
+            </div>
+            <div style="display: flex; gap: 15px; margin-top: auto; padding-top: 15px;">
+                <button class="btn-ghost" style="flex:1" onclick="app.closePopups()" data-i18n="expCancel">ANNULER</button>
+                <button class="btn-main" style="flex:1; background: var(--ocean); color: white;" onclick="app.processExport()" data-i18n="expDl">TÉLÉCHARGER</button>
+            </div>
+        </div>
+        <div class="modal-preview-box"><img id="previewImg" alt="Aperçu"></div>
+    </div>
+</div>
+<div id="workspace">
+    <div class="sidebar">
+        <div class="nav-pages" id="navInternalOnly">
+            <button class="nav-btn active" id="btnPageUND" onclick="app.setPage('SM')" data-i18n="pageSM">PANIER S/M</button>
+            <button class="nav-btn" id="btnPageL" onclick="app.setPage('L')" data-i18n="pageL">PANIER L</button>
+        </div>
+        <h1 id="mainTitle">Evolab Panier</h1>
+        <div class="field" style="margin-bottom: 25px;">
+            <label id="presetLabel" style="text-align: left; width: 100%;">Modèles prédéfinis</label>
+            <select id="presetConfig" class="preset-select" onchange="app.applyPreset(this.value)"></select>
+        </div>
+        <details class="adv-settings" id="advancedGridSettings">
+            <summary><span data-i18n="advSettings">Réglages avancés de la grille</span></summary>
+            <div class="details-content">
+                <div class="field-grid">
+                    <div class="field"><label data-i18n="profPanier">Prof. (Y)</label><input type="number" id="dimH" step="0.1" disabled style="background:#ebebeb;"></div>
+                    <div class="field"><label data-i18n="largPanier">Larg. (X)</label><input type="number" id="dimW" step="0.1" disabled style="background:#ebebeb;"></div>
+                </div>
+                <hr style="width:100%; border:0; border-top:1px dashed var(--snow); margin:0;">
+                <div class="field-grid">
+                    <div class="field"><label id="lblNx">Injecteurs X</label><input type="number" id="nx" oninput="app.draw()"></div>
+                    <div class="field"><label id="lblNy">Rangées Y</label><input type="number" id="ny" oninput="app.draw()"></div>
+                    <div class="field"><label id="lblEx">Entraxe X</label><input type="number" id="ex" oninput="app.draw()"></div>
+                    <div class="field"><label id="lblEy">Entraxe Y</label><input type="number" id="ey" oninput="app.draw()"></div>
+                    <div class="field"><label id="lblSy">Départ Haut</label><input type="number" id="sY" oninput="app.draw()"></div>
+                    <div class="field"><label id="lblMb">Marge Bas</label><input type="text" id="mBas" disabled style="background:#ebebeb; border:none;"></div>
+                </div>
+            </div>
+        </details>
+        <div class="glass-setup-box">
+            <div class="toggle-box" style="background:var(--bg-light); margin-bottom: 15px; border-color: #e11d48;" id="expertModeToggleBox">
+                <label class="check-item tt-bottom tt-center icon-red" style="font-weight: bold; color: #e11d48;" id="lblExpert" data-tooltip="Déverrouille les bridages de diamètres">
+                    <input type="checkbox" id="isExpertMode" onchange="app.toggleExpertMode()"><span data-i18n="expertMode">DÉVERROUILLER RÈGLES</span>
+                </label>
+            </div>
+            <label style="text-align: center; width: 100%; display: block; color:var(--getinge-blue); font-size:0.75rem; margin-bottom:10px;" data-i18n="glassConfig">VERRERIE À PLACER</label>
+            <div class="tabs" id="glassTabs">
+                <button class="tab-btn active" id="ts" onclick="app.setTab('s')" data-i18n="tabUnique">P1 : UNIQUE</button>
+                <button class="tab-btn" id="tm" onclick="app.setTab('m')" data-i18n="tabMulti">P1 : MULTI</button>
+                <button class="tab-btn" id="tt" onclick="app.setTab('t')" data-i18n="tabType" style="display:none;">P2 : LISTE</button>
+            </div>
+            <div id="cont-s">
+                <div class="field-grid">
+                    <div class="field"><label data-i18n="diam">Diamètre Ø</label><input type="number" id="sd1" oninput="app.draw()"></div>
+                    <div class="field"><label data-i18n="qty">Quantité</label><input type="number" id="sq1" oninput="app.draw()"></div>
+                </div>
+            </div>
+            <div id="cont-m" style="display:none;">
+                <div class="diam-row"><span></span><label data-i18n="diam">Diamètre Ø</label><label data-i18n="qty">Qté</label></div>
+                <div class="diam-row"><span style="color:var(--ocean); font-size:1.2rem; text-align:center;">●</span><input type="number" id="md1" oninput="app.draw()"><input type="number" id="mq1" oninput="app.draw()"></div>
+                <div class="diam-row"><span style="color:var(--rose); font-size:1.2rem; text-align:center;">●</span><input type="number" id="md2" oninput="app.draw()"><input type="number" id="mq2" oninput="app.draw()"></div>
+                <div class="diam-row" style="margin-bottom:0;"><span style="color:var(--amber); font-size:1.2rem; text-align:center;">●</span><input type="number" id="md3" oninput="app.draw()"><input type="number" id="mq3" oninput="app.draw()"></div>
+            </div>
+            <div id="cont-t" style="display:none; max-height: 400px; overflow-y: auto; padding-right: 5px; margin-top: 10px;"></div>
+            <hr style="width:100%; border:0; border-top:1px dashed var(--snow); margin:15px 0;">
+            <div class="toggle-box" style="background:var(--bg-light);">
+                <label class="check-item tt-bottom tt-center" style="font-weight: bold; color: var(--ocean);" id="lblQuin" data-tooltip="Alterne le placement (Ex: A, B, A, B)"><input type="checkbox" id="isAlternating" onchange="app.draw()"> <span data-i18n="quinconce">PLACEMENT ALTERNÉ</span></label>
+            </div>
+        </div>
+        <div class="btn-group">
+            <button class="btn-main" onclick="app.draw()" data-i18n="drawBtn">APPLIQUER LA CONFIGURATION</button>
+            <div style="display: flex; gap: 10px; width: 100%;">
+                <button class="btn-ghost" onclick="app.draw()" data-i18n="resetBtn" style="flex: 2;">RÉTABLIR</button>
+                <button class="btn-ghost" onclick="app.clearCurrentConfig()" style="flex: 1; color:#e11d48; border-color: rgba(225, 29, 72, 0.3);" data-i18n="clearBtn">EFFACER</button>
+            </div>
+        </div>
+        <div id="stats" class="stats-box tt-top tt-center" style="margin-top: 15px;" data-tooltip="Drag & Drop pour déplacer/échanger, Clic droit pour supprimer"><span data-i18n="waiting">En attente...</span></div>
+    </div>
+
+    <div class="viewport">
+        <div class="canvas-wrapper">
+            <canvas id="c"></canvas>
+        </div>
+        <div class="right-panels-wrapper">
+            <div class="volet" id="volet-nom">
+                <div class="volet-header" onclick="app.toggleVolet('volet-nom')">
+                    <span data-i18n="glassTitle">NOMENCLATURE MATÉRIEL</span><span class="icon">▼</span>
+                </div>
+                <div class="volet-content" id="glassContent"><div style="text-align:center; padding-top:20px; font-style:italic; opacity:0.5;">En attente de configuration...</div></div>
+            </div>
+            <div class="volet" id="volet-mac">
+                <div class="volet-header" onclick="app.toggleVolet('volet-mac')">
+                    <span data-i18n="machineTitle">LAVEURS COMPATIBLES</span><span class="icon">▼</span>
+                </div>
+                <div class="volet-content" id="machinesContent"><div style="text-align:center; padding-top:20px; font-style:italic; opacity:0.5;">Placez de la verrerie pour voir les machines compatibles.</div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<button class="export-btn-fixed tt-left tt-bottom" onclick="app.openExportPopup()" data-i18n="exportBtn" id="btnExportMain" style="display:none;" data-tooltip="Générer un export JPEG/PDF/HTML">📥 EXPORTER LE PROJET</button>
+
+<script>
+class EvolabApp {
+    constructor() {
+        this.can = document.getElementById('c'); this.ctx = this.can.getContext('2d');
+        this.appMode = 'LANDING'; this.clientConfigMode = 'DIAM'; this.expertMode = false; 
+        this.activeTab = 's'; this.activePage = 'SM'; this.uiLang = 'fr'; 
+        this.state = null; this.layout = null; this.drag = null; this.m = {x: 0, y: 0}; 
+        this.logoImg = document.createElement('img'); this.logoImg.src = "https://upload.wikimedia.org/wikipedia/commons/f/f0/Getinge.svg";
+        this.forcedMachineId = null; this.currentMaxGlassH = 0;   
+        this.basketStates = { UND: 1, MID: 1, MID_PREM: 1 }; this.dragBasket = null;
+
+        this.i18n = {
+            fr: { 
+                backHome: "HOME", ttHome: "Retour à la page d'accueil", modeInternalTitle: "USAGE INTERNE", modeInternalDesc: "Accès complet. Tous les paniers et réglages sur-mesure.",
+                modeClientTitle: "CONFIGURATION CLIENT", modeClientDesc: "Mode assisté. Modélisez par verrerie, base ou par choix de machine.",
+                clientAutoTitle: "Par Verrerie", clientAutoDesc: "Sélectionnez la verrerie. Le logiciel calcule la base et les laveurs compatibles.",
+                clientManualTitle: "Par Base Prédéfinie", clientManualDesc: "Choisissez un panier standard et remplissez-le de verrerie.",
+                clientMachineTitle: "Par Laveur", clientMachineDesc: "Choisissez d'abord votre machine, le logiciel filtrera la verrerie en hauteur.",
+                methodDesc: "Comment souhaitez-vous configurer le panier pour cette machine ?",
+                autoPopupTitle: "Sélection de la Verrerie", liveSummaryTitle: "SÉLECTION (LIVE)", rackPopupTitle: "Choisissez une base", btnCalculate: "Générer le Panier",
+                pageSM: "PANIER S/M", pageL: "PANIER L", tabUnique: "P1 : UNIQUE", tabMulti: "P1 : MULTI", tabType: "P2 : LISTE", diam: "Diamètre Ø", qty: "Qté",
+                advSettings: "Réglages de la grille", glassConfig: "VERRERIE À PLACER", profPanier: "Prof. (Y)", largPanier: "Larg. (X)",
+                quinconce: "PLACEMENT ALTERNÉ", drawBtn: "APPLIQUER LA CONFIGURATION", resetBtn: "RÉTABLIR", clearBtn: "EFFACER",
+                waiting: "En attente...", glassTitle: "NOMENCLATURE MATÉRIEL", machineTitle: "LAVEURS COMPATIBLES", exportBtn: "📥 EXPORTER LE PROJET",
+                presetOptDef: "-- Choisir un modèle --", defaultTitle: "Configurateur Panier Evolab",
+                exportModalTitle: "Options d'exportation", expProjTitle: "Titre du projet", expOrient: "Orientation", expFormat: "Format d'export", optPng: "Image (PNG)", optPdf: "Document (PDF)", expLang: "Langue (Export)", 
+                expCote: "AFFICHER DIMENSIONS", expTech: "Afficher détails techniques", expComp: "Afficher verreries", expHtml: "SAUVEGARDER COPIE HTML",
+                expCancel: "ANNULER", expDl: "TÉLÉCHARGER", livePreview: "Aperçu en direct", optPort: "Portrait", optLand: "Paysage", 
+                tech: "DONNÉES TECHNIQUES", verreries: "NOMENCLATURE", pces: "pces", injectors: "Injecteurs", forVal: "Pour", reqList: "Verrerie Sélectionnée", emptyList: "Aucune verrerie", expertMode: "DÉVERROUILLER RÈGLES",
+                erlen: "Erlenmeyer", ballon: "Ballon rond", flat: "Ballon fond plat", vol: "Fiole jaugée", cyl: "Éprouvette graduée", bottle: "Bouteille", duran: "Bouteille Duran", wide_mouth: "Bouteille Large Ouverture", carboy: "Carboy"
+            },
+            en: { 
+                backHome: "HOME", ttHome: "Back to Home Page", modeInternalTitle: "INTERNAL USE", modeInternalDesc: "Full access. Custom grids and settings.",
+                modeClientTitle: "CLIENT CONFIGURATION", modeClientDesc: "Guided mode. Model by glassware, preset base or washer choice.",
+                clientAutoTitle: "By Glassware", clientAutoDesc: "Select glassware. Software calculates base and compatible washers.",
+                clientManualTitle: "By Preset Rack", clientManualDesc: "Choose a standard rack and fill it.",
+                clientMachineTitle: "By Washer", clientMachineDesc: "Choose machine first, software filters glassware by height.",
+                methodDesc: "How do you want to configure the rack for this machine?",
+                autoPopupTitle: "Glassware Selection", liveSummaryTitle: "SELECTION (LIVE)", rackPopupTitle: "Choose starting base", btnCalculate: "Generate Rack",
+                pageSM: "RACK S/M", pageL: "RACK L", tabUnique: "M1: SINGLE", tabMulti: "M1: MULTI", tabType: "M2: LIST", diam: "Diameter Ø", qty: "Qty",
+                advSettings: "Grid settings", glassConfig: "GLASSWARE CONFIGURATION", profPanier: "Depth (Y)", largPanier: "Width (X)",
+                quinconce: "ALTERNATE PLACEMENT", drawBtn: "APPLY CONFIGURATION", resetBtn: "RESET", clearBtn: "CLEAR",
+                waiting: "Waiting...", glassTitle: "BILL OF MATERIALS", machineTitle: "COMPATIBLE WASHERS", exportBtn: "📥 EXPORT PROJECT",
+                presetOptDef: "-- Choose a model --", defaultTitle: "Evolab Configurator",
+                exportModalTitle: "Export options", expProjTitle: "Project title", expOrient: "Orientation", expFormat: "Export Format", optPng: "Image (PNG)", optPdf: "Document (PDF)", expLang: "Language", 
+                expCote: "SHOW DIMENSIONS", expTech: "Show technical details", expComp: "Show glassware", expHtml: "SAVE HTML COPY",
+                expCancel: "CANCEL", expDl: "DOWNLOAD", livePreview: "Live preview", optPort: "Portrait", optLand: "Landscape", 
+                tech: "TECHNICAL DATA", verreries: "BILL OF MATERIALS", pces: "pcs", injectors: "Injectors", forVal: "For", reqList: "Selected Glassware", emptyList: "No glassware", expertMode: "UNLOCK RULES",
+                erlen: "Erlenmeyer", ballon: "Round bottom flask", flat: "Flat bottom flask", vol: "Volumetric flask", cyl: "Graduated cylinder", bottle: "Bottle", duran: "Duran Bottle", wide_mouth: "Wide mouth bottle", carboy: "Carboy"
+            }
+        };
+
+        this.glassDB = [
+            { id: "erlen", paths: [ { d: "M 40 10 V 40 L 20 90 H 80 L 60 40 V 10 Z", f: true, w: 4 }, { d: "M 35 10 H 65", f: false, w: 6 } ], items: [ {v:10, d:31, h:50, inj:'IXA', injDia:6}, {v:25, d:42, h:75, inj:'IXC', injDia:6}, {v:50, d:51, h:90, inj:'IXC', injDia:6}, {v:100, d:64, h:105, inj:'IXC', injDia:6}, {v:150, h:118, inj:'IXC', injDia:6}, {v:200, h:131, inj:'IXC', injDia:6}, {v:250, d:85, h:145, inj:'IXC', injDia:6}, {v:300, h:156, inj:'IXC', injDia:6}, {v:500, d:105, h:180, inj:'IXC', injDia:6}, {v:1000, d:131, h:220, inj:'IXL', injDia:8}, {v:1500, h:244, inj:'IXL', injDia:8}, {v:2000, d:166, h:280, inj:'IXL', injDia:8}, {v:3000, h:310, inj:'IXL', injDia:8}, {v:4000, h:365, inj:'IXL', injDia:8}, {v:5000, d:220, h:365, inj:'IXL', injDia:8}, {v:6000, h:410, inj:'IXL', injDia:8} ]},
+            { id: "ballon", paths: [ { d: "M 40 10 V 40 A 25 25 0 1 0 60 40 V 10 Z", f: true, w: 4 }, { d: "M 35 10 H 65", f: false, w: 6 } ], items: [ {v:50, d:51, h:95, inj:'IXC', injDia:6}, {v:100, d:64, h:110, inj:'IXC', injDia:6}, {v:250, d:85, h:144, inj:'IXC', injDia:6}, {v:500, d:105, h:175, inj:'IXC', injDia:6}, {v:1000, d:131, h:200, inj:'IXC', injDia:8}, {v:2000, d:166, h:260, inj:'IXC', injDia:8}, {v:3000, h:260, inj:'IXC', injDia:8}, {v:4000, h:290, inj:'IXL', injDia:8}, {v:5000, d:223, h:305, inj:'IXL', injDia:8}, {v:6000, h:355, inj:'IXL', injDia:8}, {v:10000, d:279, h:420, inj:'IXL', injDia:8}, {v:12000, h:380, inj:'IXL', injDia:8}, {v:20000, h:515, inj:'IXL', injDia:8} ]},
+            { id: "flat", paths: [ { d: "M 40 10 V 40 C 15 40 15 85 25 85 H 75 C 85 85 85 40 60 40 V 10 Z", f: true, w: 4 }, { d: "M 35 10 H 65", f: false, w: 6 } ], items: [ {v:50, h:90, inj:'IXC', injDia:6}, {v:100, h:110, inj:'IXC', injDia:6}, {v:250, h:140, inj:'IXC', injDia:6}, {v:500, h:171, inj:'IXC', injDia:6}, {v:1000, h:190, inj:'IXC', injDia:8}, {v:2000, h:250, inj:'IXC', injDia:8}, {v:3000, h:250, inj:'IXC', injDia:8}, {v:4000, h:275, inj:'IXL', injDia:8}, {v:5000, h:290, inj:'IXL', injDia:8}, {v:6000, h:315, inj:'IXL', injDia:8}, {v:10000, h:360, inj:'IXL', injDia:8}, {v:12000, h:371, inj:'IXL', injDia:8} ]},
+            { id: "vol", paths: [ { d: "M 45 10 V 50 C 45 60 20 65 20 85 H 80 C 80 65 55 60 55 50 V 10 Z", f: true, w: 4 }, { d: "M 40 10 H 60", f: false, w: 6 }, { d: "M 40 35 H 60", f: false, w: 2 } ], items: [ {v:5, d:24, h:70, inj:'IXC', injDia:6}, {v:10, d:28, h:90, inj:'IXC', injDia:6}, {v:20, h:110, inj:'IXC', injDia:6}, {v:25, h:110, inj:'IXC', injDia:6}, {v:50, d:49, h:140, inj:'IXC', injDia:6}, {v:100, d:61, h:170, inj:'IXC', injDia:6}, {v:200, h:210, inj:'IXL', injDia:6}, {v:250, d:81, h:220, inj:'IXL', injDia:6}, {v:500, d:101, h:260, inj:'IXL', injDia:6}, {v:1000, d:127, h:300, inj:'IXL', injDia:8}, {v:2000, h:370, inj:'IXL', injDia:8}, {v:5000, h:470, inj:'IXL', injDia:8} ]},
+            { id: "cyl", paths: [ { d: "M 40 15 V 90 H 60 V 10 L 40 15", f: true, w: 4 }, { d: "M 25 90 H 75", f: false, w: 6 }, { d: "M 40 30 H 50 M 40 50 H 50 M 40 70 H 50", f: false, w: 2 } ], items: [ {v:5, h:112, inj:'IXC', injDia:6}, {v:10, d:14, h:137, inj:'IXC', injDia:6}, {v:25, h:167, inj:'IXC', injDia:6}, {v:50, d:25, h:196, inj:'IXC', injDia:6}, {v:100, d:29, h:256, inj:'IXL', injDia:6}, {v:250, d:39, h:331, inj:'IXL', injDia:6}, {v:500, d:53, h:360, inj:'IXL', injDia:6}, {v:1000, d:65, h:460, inj:'IXL', injDia:8}, {v:1500, h:480, inj:'IXL', injDia:8}, {v:2000, h:500, inj:'IXL', injDia:8} ]},
+            { id: "bottle", paths: [ { d: "M 35 25 Q 25 25 25 40 V 90 H 75 V 40 Q 75 25 65 25 Z", f: true, w: 4 }, { d: "M 32 10 H 68 V 25 H 32 Z", f: "solid", w: 4 } ], items: [ {v:10, h:50, inj:'IXC', injDia:6}, {v:25, h:74, inj:'IXC', injDia:6}, {v:50, d:46, h:91, inj:'IXC', injDia:6}, {v:100, d:56, h:105, inj:'IXC', injDia:6}, {v:150, h:115, inj:'IXC', injDia:6}, {v:250, d:70, h:143, inj:'IXC', injDia:6}, {v:500, d:86, h:181, inj:'IXC', injDia:6}, {v:750, h:208, inj:'IXL', injDia:8}, {v:1000, d:101, h:230, inj:'IXL', injDia:8}, {v:2000, d:136, h:265, inj:'IXL', injDia:8}, {v:3500, h:300, inj:'IXL', injDia:8}, {v:5000, d:182, h:335, inj:'IXL', injDia:8}, {v:10000, h:415, inj:'IXL', injDia:8}, {v:15000, h:450, inj:'IXL', injDia:8}, {v:20000, h:510, inj:'IXL', injDia:8} ]}
+        ];
+        
+        this.presetsClient = [ { id: "base20", nx:5, ny:4, ex:86, ey:110, sy:67, injDia:8 }, { id: "base49", nx:7, ny:7, ex:66, ey:66, sy:43.5, injDia:6 }, { id: "base100", nx:10, ny:10, ex:47, ey:47, sy:35.9, injDia:6 } ];
+
+        this.machineDB = {
+            "UND": { name: "Undercounter", vBox: "0 0 100 130", svgPaths: `<path d="M 10 10 H 90 V 120 H 10 Z" fill="#f4f2f1" stroke="#18274a" stroke-width="1.5" stroke-linejoin="round"/><path d="M 15 120 V 123 H 21 V 120 M 79 120 V 123 H 85 V 120" fill="#18274a" stroke="#18274a" stroke-width="1.5"/><path d="M 10 22 H 90" stroke="#18274a" stroke-width="1.5" fill="none"/><path d="M 40 13 H 60 V 19 H 40 Z" fill="#ffffff" stroke="#18274a" stroke-width="1.5" stroke-linejoin="round"/><circle cx="34" cy="16" r="1.5" fill="#18274a"/><path d="M 14 26 H 86 V 88 H 14 Z" fill="#ffffff" stroke="#e9e4e3" stroke-width="1"/><path d="M 35 35 V 79 M 65 35 V 79" stroke="#bfb1ac" stroke-width="1.5" stroke-linecap="round" fill="none"/><path d="M 15 89 H 85 V 93 H 15 Z" fill="#e9e4e3" stroke="#18274a" stroke-width="1.2" stroke-linejoin="round"/><path d="M 20 94 V 98 C 20 99.5 21 100 22 100 H 78 C 79 100 80 99.5 80 98 V 94" fill="none" stroke="#18274a" stroke-width="2"/><path d="M 20 106 H 30 M 20 110 H 30 M 20 114 H 30 M 35 106 H 45 M 35 110 H 45 M 35 114 H 45" stroke="#18274a" stroke-width="1.5" stroke-linecap="round"/>`, levels: [ { id: 1, name: "Bouche 1", cy: 76, maxH: 454 }, { id: 2, name: "Bouche 2", cy: 45, maxH: 240 } ] },
+            "MID": { name: "Middle Size", vBox: "0 0 100 260", svgPaths: `<path d="M 10 10 H 90 V 250 H 10 Z" fill="#f4f2f1" stroke="#18274a" stroke-width="1.5" stroke-linejoin="round"/><path d="M 10 240 H 90" stroke="#18274a" stroke-width="1.5" fill="none"/><path d="M 10 45 H 90" stroke="#18274a" stroke-width="1.5" fill="none"/><rect x="14" y="24" width="10" height="10" fill="#e9e4e3" stroke="#18274a" stroke-width="1.5" rx="1"/><path d="M 16 26 L 22 32" stroke="#e11d48" stroke-width="1.5" stroke-linecap="round"/><circle cx="31" cy="29" r="3.5" fill="#f59e0b" stroke="#18274a" stroke-width="1"/><circle cx="31" cy="29" r="1.8" fill="#e11d48"/><path d="M 40 23 H 58 V 35 H 40 Z" fill="#ffffff" stroke="#18274a" stroke-width="1.5" stroke-linejoin="round"/><circle cx="65" cy="29" r="1.5" fill="#18274a"/><path d="M 14 49 H 86 V 158 H 14 Z" fill="#ffffff" stroke="#e9e4e3" stroke-width="1"/><path d="M 35 60 V 148 M 65 60 V 148" stroke="#bfb1ac" stroke-width="1.5" stroke-linecap="round" fill="none"/><path d="M 15 160 H 85 V 164 H 15 Z" fill="#e9e4e3" stroke="#18274a" stroke-width="1.2" stroke-linejoin="round"/><path d="M 20 167 V 172 C 20 173.5 21 174 22 174 H 78 C 79 174 80 173.5 80 172 V 167" fill="none" stroke="#18274a" stroke-width="2"/><path d="M 20 182 H 35 V 186 H 20 Z" fill="none" stroke="#18274a" stroke-width="1.5" stroke-linejoin="round"/><path d="M 23 184 H 32" stroke="#18274a" stroke-width="1"/>`, levels: [ { id: 1, name: "Bouche 1", cy: 138, maxH: 349 }, { id: 2, name: "Bouche 2", cy: 105, maxH: 240 }, { id: 4, name: "Bouche 4", cy: 72,  maxH: 240 } ] },
+            "MID_PREM": { name: "Middle Size Premium", vBox: "0 0 100 260", svgPaths: `<path d="M 10 10 H 90 V 250 H 10 Z" fill="#f4f2f1" stroke="#18274a" stroke-width="1.5" stroke-linejoin="round"/><path d="M 10 240 H 90" stroke="#18274a" stroke-width="1.5" fill="none"/><path d="M 10 45 H 90" stroke="#18274a" stroke-width="1.5" fill="none"/><rect x="14" y="24" width="10" height="10" fill="#e9e4e3" stroke="#18274a" stroke-width="1.5" rx="1"/><path d="M 16 26 L 22 32" stroke="#e11d48" stroke-width="1.5" stroke-linecap="round"/><circle cx="31" cy="29" r="3.5" fill="#f59e0b" stroke="#18274a" stroke-width="1"/><circle cx="31" cy="29" r="1.8" fill="#e11d48"/><path d="M 40 23 H 58 V 35 H 40 Z" fill="#ffffff" stroke="#18274a" stroke-width="1.5" stroke-linejoin="round"/><circle cx="65" cy="29" r="1.5" fill="#18274a"/><path d="M 14 49 H 86 V 158 H 14 Z" fill="#ffffff" stroke="#e9e4e3" stroke-width="1"/><path d="M 35 55 V 148 M 65 55 V 148" stroke="#bfb1ac" stroke-width="1.5" stroke-linecap="round" fill="none"/><path d="M 15 160 H 85 V 164 H 15 Z" fill="#e9e4e3" stroke="#18274a" stroke-width="1.2" stroke-linejoin="round"/><path d="M 20 167 V 172 C 20 173.5 21 174 22 174 H 78 C 79 174 80 173.5 80 172 V 167" fill="none" stroke="#18274a" stroke-width="2"/><path d="M 20 182 H 35 V 186 H 20 Z" fill="none" stroke="#18274a" stroke-width="1.5" stroke-linejoin="round"/><path d="M 23 184 H 32" stroke="#18274a" stroke-width="1"/>`, levels: [ { id: 1, name: "Bouche 1", cy: 143, maxH: 349 }, { id: 2, name: "Bouche 2", cy: 116, maxH: 240 }, { id: 3, name: "Bouche 3", cy: 89,  maxH: 349 }, { id: 4, name: "Bouche 4", cy: 62,  maxH: 240 } ] }
+        };
+        this.init();
+    }
+
+    init() {
+        this.can.width = 630; this.can.height = 650;
+        this.can.addEventListener('mousedown', this.onMouseDown.bind(this)); this.can.addEventListener('mousemove', this.onMouseMove.bind(this)); this.can.addEventListener('mouseup', this.onMouseUp.bind(this)); this.can.addEventListener('mouseleave', this.onMouseUp.bind(this)); this.can.addEventListener('contextmenu', this.onContextMenu.bind(this));
+        document.addEventListener('keydown', (e) => { if(e.key === 'Enter' && this.appMode !== 'LANDING' && this.appMode !== 'CLIENT_MENU') { if(document.getElementById('exportModal').style.display === 'flex') return; e.preventDefault(); this.draw(); } });
+        document.addEventListener('mousedown', this.onSvgMouseDown.bind(this)); document.addEventListener('mousemove', this.onSvgMouseMove.bind(this)); document.addEventListener('mouseup', this.onSvgMouseUp.bind(this));
+        document.getElementById('expTitle').value = this.i18n.fr.defaultTitle; this.setUILanguage('fr'); this.buildAutoGlasswarePopupList(); this.buildMachinePicker();
+
+        const savedAppMode = document.body.getAttribute('data-appmode');
+        if (savedAppMode) {
+            this.appMode = savedAppMode; this.clientConfigMode = document.body.getAttribute('data-configmode') || 'DIAM'; this.expertMode = document.body.getAttribute('data-expert') === 'true'; this.activeTab = document.body.getAttribute('data-tab') || 's'; this.activePage = document.body.getAttribute('data-page') || 'SM'; this.forcedMachineId = document.body.getAttribute('data-forcedmac') || null;
+            document.querySelectorAll('.fullscreen-view').forEach(v => v.classList.remove('view-active')); document.getElementById('workspace').style.display = 'flex'; document.getElementById('btnExportMain').style.display = 'block';
+            if (this.appMode === 'CLIENT_MANUAL' || this.appMode === 'CLIENT_AUTO') { document.getElementById('advancedGridSettings').open = false; document.getElementById('advancedGridSettings').style.display = 'none'; document.getElementById('isAlternating').checked = document.body.getAttribute('data-isalt') === 'true'; if(this.clientConfigMode === 'TYPE') this.setTab('t'); }
+            setTimeout(() => { this.draw(); }, 50);
+        } else { this.setMode('LANDING'); }
+    }
+
+    getPresetDef(val) { const presets = { "base13": {nx:3, ny:5, ex:150, ey:80, sy:81.5, injDia: 8 }, "base20": {nx:5, ny:4, ex:86, ey:110, sy:67, injDia: 8 }, "base49": {nx:7, ny:7, ex:66, ey:66, sy:43.5, injDia: 6 }, "base60": {nx:6, ny:10, ex:80, ey:44, sy:43.5, injDia: 6 }, "base64": {nx:8, ny:8, ex:55, ey:55, sy:45, injDia: 6 }, "base100": {nx:10, ny:10, ex:47, ey:47, sy:35.9, injDia: 6 } }; return presets[val]; }
+    getInjectorText(injCode, injDia) { return injDia === 8 ? (injCode === 'IXC' ? "IXC Ø8mm" : injCode + " Ø8/12mm") : injCode + " Ø6mm"; }
+    toggleVolet(id) { document.getElementById(id).classList.toggle('collapsed'); }
+
+    setMode(mode, data = null) {
+        this.appMode = mode; document.querySelectorAll('.fullscreen-view').forEach(v => v.classList.remove('view-active')); document.getElementById('workspace').style.display = 'none'; document.getElementById('btnExportMain').style.display = 'none'; this.closePopups();
+        if (mode === 'LANDING') { document.getElementById('view-landing').classList.add('view-active'); this.clearCurrentConfig(); } 
+        else if (mode === 'CLIENT_MENU') { this.forcedMachineId = null; document.getElementById('view-client-menu').classList.add('view-active'); this.clearCurrentConfig(); } 
+        else if (mode === 'MACHINE_PICKER') { document.getElementById('view-machine-picker').classList.add('view-active'); }
+        else if (mode === 'INTERNAL') { document.getElementById('workspace').style.display = 'flex'; document.getElementById('btnExportMain').style.display = 'block'; document.getElementById('navInternalOnly').style.display = 'flex'; document.getElementById('advancedGridSettings').style.display = 'block'; document.getElementById('expertModeToggleBox').style.display = 'none'; this.expertMode = true; this.setPage('SM'); document.getElementById('ts').style.display = 'block'; document.getElementById('tm').style.display = 'block'; document.getElementById('tt').style.display = 'none'; this.setTab('s'); }
+        else if (mode === 'CLIENT_MANUAL') { document.getElementById('workspace').style.display = 'flex'; document.getElementById('btnExportMain').style.display = 'block'; document.getElementById('navInternalOnly').style.display = 'none'; document.getElementById('advancedGridSettings').style.display = 'none'; document.getElementById('expertModeToggleBox').style.display = 'flex'; this.expertMode = false; document.getElementById('isExpertMode').checked = false; document.getElementById('isExpertModeAuto').checked = false; this.setPage('SM'); const presetSelect = document.getElementById('presetConfig'); presetSelect.innerHTML = `<option value="">${this.i18n[this.uiLang].presetOptDef}</option><option value="base20">BASE 20 INJ</option><option value="base49">BASE 49 INJ</option><option value="base100">BASE 100 INJ</option>`; this.applyPreset(data.presetId); presetSelect.value = data.presetId; document.getElementById('ts').style.display = 'block'; document.getElementById('tm').style.display = 'block'; document.getElementById('tt').style.display = 'block'; this.buildSidebarSpecificList(); this.setTab('t'); }
+        else if (mode === 'CLIENT_AUTO') { document.getElementById('workspace').style.display = 'flex'; document.getElementById('btnExportMain').style.display = 'block'; document.getElementById('navInternalOnly').style.display = 'none'; document.getElementById('advancedGridSettings').style.display = 'none'; document.getElementById('expertModeToggleBox').style.display = 'flex'; this.expertMode = data.expertMode || false; document.getElementById('isExpertMode').checked = this.expertMode; document.getElementById('isExpertModeAuto').checked = this.expertMode; this.setPage('SM'); const presetSelect = document.getElementById('presetConfig'); presetSelect.innerHTML = `<option value="">${this.i18n[this.uiLang].presetOptDef}</option><option value="base20">BASE 20 INJ</option><option value="base49">BASE 49 INJ</option><option value="base100">BASE 100 INJ</option>`; this.applyPreset(data.bestPreset.id); presetSelect.value = data.bestPreset.id; document.getElementById('isAlternating').checked = data.bestIsAlt; document.getElementById('ts').style.display = 'block'; document.getElementById('tm').style.display = 'block'; document.getElementById('tt').style.display = 'block'; this.state = { holes: data.bestHoles, nx: data.bestPreset.nx, ny: data.bestPreset.ny, ex: data.bestPreset.ex, ey: data.bestPreset.ey, sY: data.bestPreset.sy, list: [], isQ: false, hVal: data.hVal, wVal: data.wVal, dispW: 473 }; this.buildSidebarSpecificList(); if (data.reqList) { data.reqList.forEach(req => { const inp = document.getElementById(`side_${req.grp}_${req.v}`); if (inp) inp.value = req.qty; }); } this.setTab('t'); }
+    }
+
+    buildMachinePicker() { const container = document.getElementById('machine-picker-list'); let html = ''; Object.keys(this.machineDB).forEach(id => { let m = this.machineDB[id]; html += `<div class="choice-card machine-card" onclick="app.selectMachine('${id}')"><h2>${m.name}</h2><div class="interactive-svg-container"><svg viewBox="${m.vBox}">${m.svgPaths}</svg></div></div>`; }); container.innerHTML = html; }
+    selectMachine(id) { this.forcedMachineId = id; document.getElementById('view-machine-picker').classList.remove('view-active'); document.getElementById('lblMethodTitle').innerText = this.machineDB[id].name; document.getElementById('popup-method-picker').style.display = 'flex'; }
+    openAutoPopup() { this.forcedMachineId = null; this.expertMode = false; document.getElementById('isExpertModeAuto').checked = false; document.getElementById('isExpertMode').checked = false; document.getElementById('popup-auto-glassware').style.display = 'flex'; document.querySelectorAll('.auto-glass-input').forEach(i => i.value = 0); this.updateAutoSummary(); }
+    openAutoPopupFromMachine() { document.getElementById('popup-method-picker').style.display = 'none'; this.expertMode = false; document.getElementById('isExpertModeAuto').checked = false; document.getElementById('isExpertMode').checked = false; document.getElementById('popup-auto-glassware').style.display = 'flex'; document.querySelectorAll('.auto-glass-input').forEach(i => i.value = 0); this.updateAutoSummary(); }
+    openManualPopup() { this.forcedMachineId = null; document.getElementById('popup-rack-select').style.display = 'flex'; }
+    openManualPopupFromMachine() { document.getElementById('popup-method-picker').style.display = 'none'; document.getElementById('popup-rack-select').style.display = 'flex'; }
+    launchManualBase(id) { this.setMode('CLIENT_MANUAL', {presetId: id}); }
+    closePopups() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
+    toggleExpertModeAuto() { this.expertMode = document.getElementById('isExpertModeAuto').checked; document.getElementById('isExpertMode').checked = this.expertMode; }
+    toggleExpertMode() { this.expertMode = document.getElementById('isExpertMode').checked; document.getElementById('isExpertModeAuto').checked = this.expertMode; if (this.appMode === 'CLIENT_MANUAL' || this.appMode === 'CLIENT_AUTO') { this.buildSidebarSpecificList(); } }
+
+    buildAutoGlasswarePopupList() {
+        const container = document.getElementById('auto-glassware-list'); container.innerHTML = ''; const dict = this.i18n[this.uiLang];
+        this.glassDB.forEach(group => {
+            const validItems = group.items.filter(i => i.d && i.h); if (validItems.length === 0) return; let groupHtml = `<details class="glass-category-details"><summary>${dict[group.id] || group.id}</summary><div class="glass-picker-grid">`;
+            validItems.forEach(item => {
+                const uniqueId = `auto_${group.id}_${item.v}`; let injCode = item.inj || 'IXC'; let injDia = item.injDia || 6; let badgeBg = injDia === 8 ? '#f59e0b' : '#31b7bc'; let badgeTxt = injDia === 8 ? '#18274a' : '#ffffff';
+                groupHtml += `<div class="glass-picker-card">${this.getSvgHtmlString(group.paths)}<strong>${item.v} ml</strong><span>Ø${item.d} mm | H: ${item.h} mm</span><span style="display:inline-block; margin: 4px 0 10px 0; padding: 2px 6px; border-radius: 4px; background: ${badgeBg}; color: ${badgeTxt}; font-weight: bold; font-size: 0.65rem;">${this.getInjectorText(injCode, injDia)}</span><div style="display:flex; align-items:center; gap:8px;"><button class="spec-qty-btn" onclick="app.changeAutoQty('${uniqueId}', -1)">-</button><input type="number" class="auto-glass-input" id="${uniqueId}" data-grp="${group.id}" data-v="${item.v}" data-d="${item.d}" data-h="${item.h}" data-injdia="${injDia}" value="0" min="0" oninput="app.updateAutoSummary()"><button class="spec-qty-btn" onclick="app.changeAutoQty('${uniqueId}', 1)">+</button></div></div>`;
+            }); container.innerHTML += groupHtml + `</div></details>`;
+        });
+    }
+
+    changeAutoQty(id, delta) { const el = document.getElementById(id); let val = parseInt(el.value) || 0; val += delta; if(val < 0) val = 0; el.value = val; this.updateAutoSummary(); }
+    updateAutoSummary() {
+        const container = document.getElementById('auto-summary-list'); container.innerHTML = ''; let hasItems = false;
+        document.querySelectorAll('.auto-glass-input').forEach(inp => { const q = parseInt(inp.value); if (q > 0) { hasItems = true; const grp = inp.getAttribute('data-grp'); const v = inp.getAttribute('data-v'); const d = inp.getAttribute('data-d'); container.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid var(--snow); padding-bottom:6px; align-items:center;"><span style="color:var(--getinge-blue);"><strong style="color:var(--ocean); font-size:1.1rem; margin-right:5px;">${q}x</strong> ${this.i18n[this.uiLang][grp] || grp} ${v}ml</span><span style="color:var(--midnight); font-size:0.75rem; font-weight:bold;">Ø${d}</span></div>`; } });
+        if (!hasItems) container.innerHTML = `<div style="color:var(--clay); font-style:italic; text-align:center; padding-top:40px;">${this.i18n[this.uiLang].emptyList}</div>`;
+    }
+
+    buildSidebarSpecificList() {
+        const container = document.getElementById('cont-t'); container.innerHTML = ''; const dict = this.i18n[this.uiLang]; const pDef = this.getPresetDef(document.getElementById('presetConfig').value); const requiredDia = pDef ? pDef.injDia : 6; 
+        this.glassDB.forEach(group => {
+            const validItems = group.items.filter(i => { if (!i.d || !i.h) return false; return this.expertMode ? true : i.injDia === requiredDia; }); if (validItems.length === 0) return; let html = `<details class="glass-category-details" style="margin-bottom: 5px;"><summary style="font-size: 0.75rem; padding: 8px 12px;">${dict[group.id] || group.id}</summary><div style="background: white; border-top: 1px solid var(--snow); border-radius: 0 0 8px 8px; padding: 5px;">`;
+            validItems.forEach(item => { const uniqueId = `side_${group.id}_${item.v}`; let badgeBg = item.injDia === 8 ? '#f59e0b' : '#31b7bc'; let badgeTxt = item.injDia === 8 ? '#18274a' : '#ffffff'; html += `<div class="spec-item-row"><div class="spec-item-info"><span class="spec-item-name">${item.v} ml <span style="display:inline-block; margin-left:4px; padding: 2px 4px; border-radius: 4px; background: ${badgeBg}; color: ${badgeTxt}; font-weight: bold; font-size: 0.55rem;">${this.getInjectorText(item.inj||'IXC', item.injDia||6)}</span></span><span class="spec-item-dim">Ø${item.d} | H:${item.h}</span></div><div class="spec-qty-controls"><button class="spec-qty-btn" onclick="app.updateSpecificQty('${uniqueId}', -1)">-</button><input type="number" class="spec-qty-input" id="${uniqueId}" value="0" min="0" oninput="app.draw()"><button class="spec-qty-btn" onclick="app.updateSpecificQty('${uniqueId}', 1)">+</button></div></div>`; }); container.innerHTML += html + `</div></details>`;
+        });
+    }
+
+    updateSpecificQty(id, delta) { const inp = document.getElementById(id); let val = parseInt(inp.value) || 0; val += delta; if (val < 0) val = 0; inp.value = val; this.draw(); }
+
+    runAutoSolver() {
+        let reqList = []; let maxH_eval = 0; document.querySelectorAll('.auto-glass-input').forEach(inp => { const q = parseInt(inp.value); if (q > 0) { let hh = parseFloat(inp.getAttribute('data-h')); if(hh > maxH_eval) maxH_eval = hh; reqList.push({ grp: inp.getAttribute('data-grp'), v: parseInt(inp.getAttribute('data-v')), d: parseFloat(inp.getAttribute('data-d')), injDia: parseInt(inp.getAttribute('data-injdia')), qty: q }); } });
+        if (reqList.length === 0) { alert("Veuillez sélectionner au moins une verrerie."); return; }
+        if (this.forcedMachineId) { let mac = this.machineDB[this.forcedMachineId]; let validLevels = mac.levels.filter(l => l.maxH >= maxH_eval); if (validLevels.length === 0) { alert(`Impossible : La verrerie la plus haute (${maxH_eval}mm) ne rentre dans aucun étage du laveur ${mac.name}.`); return; } }
+        let requiredDias = new Set(); let itemsToPlace = []; reqList.forEach(r => { requiredDias.add(r.injDia); for(let i=0; i<r.qty; i++) itemsToPlace.push({grp: r.grp, v: r.v, d: r.d}); });
+        if (!this.expertMode && requiredDias.size > 1) { alert("⚠️ Vous avez sélectionné des verreries nécessitant des diamètres d'injecteurs différents (Ø6 et Ø8). Veuillez faire 2 paniers distincts."); return; }
+        itemsToPlace.sort((a,b) => b.d - a.d); let validPresets = this.presetsClient; if (!this.expertMode) { let tDia = requiredDias.values().next().value; validPresets = this.presetsClient.filter(p => p.injDia === tDia); }
+        const wVal = 475; const hVal = 482.9; let bestPreset = null; let bestHoles = null; let bestIsAlt = false;
+        for (let preset of validPresets) { let holes = this.generateVirtualGrid(preset, wVal, hVal); let resAlt = this.canFitAll(itemsToPlace, holes, wVal, hVal, true); if (resAlt.success) { bestPreset = preset; bestHoles = resAlt.holes; bestIsAlt = true; break; } let resStd = this.canFitAll(itemsToPlace, holes, wVal, hVal, false); if (resStd.success) { bestPreset = preset; bestHoles = resStd.holes; bestIsAlt = false; break; } }
+        if (bestPreset) { this.setMode('CLIENT_AUTO', { bestPreset, bestHoles, bestIsAlt, wVal, hVal, reqList, expertMode: this.expertMode }); } else { alert("Trop de verrerie pour un seul panier S/M."); }
+    }
+
+    generateVirtualGrid(p, wVal, hVal) { const holes = []; let rowStartX = (wVal/2) - (((p.nx-1)*p.ex)/2); for(let r=0; r<p.ny; r++) { for(let c=0; c<p.nx; c++) holes.push({ x: rowStartX + (c*p.ex), y: p.sy + (r*p.ey), glass: null }); } return holes; }
+
+    canFitAll(items, baseHoles, wVal, hVal, isAlt) {
+        let holes = JSON.parse(JSON.stringify(baseHoles)); let listMap = {}; items.forEach(i => { let k = i.grp+"_"+i.v; if(!listMap[k]) { const colors = ['#31b7bc', '#e11d48', '#f59e0b', '#94b654', '#8b5cf6', '#4f46e5', '#0d9488', '#db2777', '#ea580c', '#65a30d']; let uniqueIdx = Object.keys(listMap).length; listMap[k] = { d: i.d, q: 0, c: colors[uniqueIdx % 10], idx: uniqueIdx, reqGrp: i.grp, reqV: i.v, p: 0 }; } listMap[k].q++; });
+        let list = Object.values(listMap).sort((a,b)=>b.d-a.d);
+        if (isAlt) { let totalToPlace = list.reduce((sum, g) => sum + g.q, 0); let placedSomething = true; while(placedSomething && totalToPlace > 0) { placedSomething = false; for (let g of list) { if (g.p < g.q) { for (let h of holes) { if (!h.glass && this.isSafe(h, g.d, holes, wVal, hVal)) { h.glass = { d: g.d, color: g.c, idx: g.idx, reqGrp: g.reqGrp, reqV: g.reqV }; g.p++; totalToPlace--; placedSomething = true; break; } } } } } } else { list.forEach(g => { holes.forEach(h => { if(g.p < g.q && !h.glass && this.isSafe(h, g.d, holes, wVal, hVal)) { h.glass = { d: g.d, color: g.c, idx: g.idx, reqGrp: g.reqGrp, reqV: g.reqV }; g.p++; } }); }); } return { success: list.every(g => g.p === g.q), holes };
+    }
+
+    isSafe(h, d, allHoles, wReal, hReal) { if (h.x - d/2 < 0 || h.x + d/2 > wReal || h.y - d/2 < 0 || h.y + d/2 > hReal) return false; for (let other of allHoles) { if (other.glass && other !== h) { if (Math.sqrt((h.x - other.x)**2 + (h.y - other.y)**2) < (d/2 + other.glass.d/2) + 0.5) return false; } } return true; }
+    getScaling(wReal, hReal) { const s = Math.min((this.can.width - 140)/wReal, (this.can.height - 100)/hReal); return { scale: s, ox: (this.can.width - wReal*s)/2, oy: (this.can.height - hReal*s)/2 + 15 }; }
+
+    draw() {
+        const nx = parseInt(document.getElementById('nx').value)||0, ny = parseInt(document.getElementById('ny').value)||0; const ex = parseFloat(document.getElementById('ex').value)||0, ey = parseFloat(document.getElementById('ey').value)||0; const sY = parseFloat(document.getElementById('sY').value)||0; const isAlt = document.getElementById('isAlternating').checked; const currentH = parseFloat(document.getElementById('dimH').value) || (this.activePage === 'SM' ? 482.9 : 607.5); const displayW = parseFloat(document.getElementById('dimW').value) || (this.activePage === 'SM' ? 473 : 589); const currentW = (this.activePage === 'SM') ? 475 : displayW; document.getElementById('mBas').value = (currentH - (sY + (ny - 1) * ey)).toFixed(2);
+        let list = []; const colors = ['#31b7bc','#e11d48','#f59e0b']; 
+        if (this.clientConfigMode === 'DIAM') { if(this.activeTab === 's') { let d = parseFloat(document.getElementById('sd1').value)||0; if(d>0) list.push({ d, q: parseInt(document.getElementById('sq1').value)||0, c: colors[0], idx: 0, p: 0 }); } else { for(let i=1; i<=3; i++) { let d = parseFloat(document.getElementById('md'+i).value)||0, q = parseInt(document.getElementById('mq'+i).value)||0; if(d>0) list.push({ d, q, c: colors[i-1], idx: i-1, p: 0 }); } } } else { let itemsToPlace = []; document.querySelectorAll('.spec-qty-input').forEach(inp => { const q = parseInt(inp.value) || 0; if (q > 0) { const idParts = inp.id.split('_'); const grpId = idParts[1]; const vVal = parseInt(idParts[2]); const grpDef = this.glassDB.find(g => g.id === grpId); const itemDef = grpDef.items.find(i => i.v === vVal); if (itemDef) { for(let k=0; k<q; k++) itemsToPlace.push({ d: itemDef.d, reqGrp: grpId, reqV: vVal, p:0 }); } } }); itemsToPlace.sort((a,b) => b.d - a.d); const dynColors = ['#31b7bc', '#e11d48', '#f59e0b', '#94b654', '#8b5cf6', '#4f46e5', '#0d9488', '#db2777', '#ea580c', '#65a30d']; let uniqueReqs = []; itemsToPlace.forEach(i => { if (!uniqueReqs.find(r => r.reqGrp === i.reqGrp && r.reqV === i.reqV)) uniqueReqs.push({reqGrp: i.reqGrp, reqV: i.reqV}); }); list = itemsToPlace.map(i => { let cIdx = uniqueReqs.findIndex(r => r.reqGrp === i.reqGrp && r.reqV === i.reqV); return { d: i.d, q: 1, c: dynColors[cIdx % 10], idx: cIdx, reqGrp: i.reqGrp, reqV: i.reqV, p: 0 }; }); }
+        const holes = this.generateVirtualGrid({nx, ny, ex, ey, sy: sY}, currentW, currentH);
+        if (isAlt) { let totalToPlace = list.reduce((sum, g) => sum + g.q, 0); let placedSomething = true; while(placedSomething && totalToPlace > 0) { placedSomething = false; for (let g of list) { if (g.p < g.q) { for (let h of holes) { if (!h.glass && this.isSafe(h, g.d, holes, currentW, currentH)) { h.glass = { d: g.d, color: g.c, idx: g.idx, reqGrp: g.reqGrp, reqV: g.reqV }; g.p++; totalToPlace--; placedSomething = true; break; } } } } } } else { list.forEach(g => { holes.forEach(h => { if(g.p < g.q && !h.glass && this.isSafe(h, g.d, holes, currentW, currentH)) { h.glass = { d: g.d, color: g.c, idx: g.idx, reqGrp: g.reqGrp, reqV: g.reqV }; g.p++; } }); }); }
+        this.state = { holes, nx, ny, ex, ey, sY, list, isQ: false, hVal: currentH, wVal: currentW, dispW: displayW }; this.updateGlassUi(); this.updateMachineVolet(); this.render(this.ctx, null, null, null, false, {cote: this.appMode === 'INTERNAL'});
+    }
+
+    render(ctx = this.ctx, z = null, ox = null, oy = null, isExp = false, opts = {cote:true}) {
+        const wVal = this.state ? this.state.wVal : 475, hVal = this.state ? this.state.hVal : 482.9, dispW = this.state ? this.state.dispW : 473; if (z === null) { this.layout = this.getScaling(wVal, hVal); z = this.layout.scale; ox = this.layout.ox; oy = this.layout.oy; }
+        if (!isExp) ctx.clearRect(0,0,630,650); const fSize = isExp ? 11 * z : 13; const rectOffsetX = ox + ((wVal - dispW) / 2) * z; const cX = ox + (wVal * z) / 2; 
+        ctx.strokeStyle = "#18274a"; ctx.lineWidth = 2 * (isExp ? 2 : 1); ctx.beginPath(); ctx.moveTo(cX - 40*z, oy - 25*z); ctx.lineTo(cX + 40*z, oy - 25*z); ctx.lineTo(cX + 20*z, oy); ctx.lineTo(cX - 20*z, oy); ctx.closePath(); ctx.stroke(); ctx.strokeRect(rectOffsetX, oy, dispW*z, hVal*z);
+        if(opts.cote) { ctx.fillStyle = "#18274a"; ctx.font = `bold ${fSize}px 'Getinge Sans', sans-serif`; ctx.textAlign = "center"; ctx.fillText(`${dispW} mm`, cX, oy - 35*z); ctx.save(); ctx.translate(rectOffsetX - 15*z, oy + (hVal*z)/2); ctx.rotate(-Math.PI/2); ctx.fillText(`${hVal} mm`, 0, 0); ctx.restore(); ctx.strokeStyle = "#e11d48"; ctx.lineWidth = 1.5 * z; const syZ = (this.state?this.state.sY:35.9)*z; ctx.beginPath(); ctx.moveTo(rectOffsetX-22*z, oy); ctx.lineTo(rectOffsetX+5*z, oy); ctx.stroke(); ctx.beginPath(); ctx.moveTo(rectOffsetX-22*z, oy+syZ); ctx.lineTo(rectOffsetX+5*z, oy+syZ); ctx.stroke(); ctx.beginPath(); ctx.moveTo(rectOffsetX-14*z, oy); ctx.lineTo(rectOffsetX-14*z, oy+syZ); ctx.stroke(); ctx.font = `bold ${fSize}px 'Getinge Sans', sans-serif`; ctx.fillStyle = "#e11d48"; ctx.textAlign = "right"; ctx.fillText(this.state?this.state.sY:35.9, rectOffsetX-18*z, oy+syZ/2+(fSize*0.35)); }
+        if(this.state) { ctx.fillStyle = "rgba(148, 163, 184, 0.4)"; for(let r=0; r<this.state.ny; r++) ctx.fillRect(rectOffsetX, oy + (this.state.sY + (r * this.state.ey) - 6)*z, dispW*z, 12*z); this.state.holes.forEach(h => { let px = ox+h.x*z, py = oy+h.y*z; ctx.beginPath(); ctx.arc(px,py,2*z,0,7); ctx.fillStyle="#18274a"; ctx.fill(); if(h.glass) { ctx.beginPath(); ctx.arc(px,py,(h.glass.d/2)*z,0,7); ctx.strokeStyle=h.glass.color; ctx.lineWidth=1.8*z; if (this.appMode === 'INTERNAL' && h.glass.idx > 0) { ctx.setLineDash([5*z, 5*z]); } ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.arc(px,py,7*z,0,7); ctx.fillStyle="white"; ctx.fill(); ctx.font=`bold ${10*z}px 'Getinge Sans', sans-serif`; ctx.fillStyle=h.glass.color; ctx.textAlign="center"; ctx.fillText(Math.round(h.glass.d), px, py+(4*z)); } }); if(this.drag && !isExp) { let px = this.m.x, py = this.m.y; ctx.beginPath(); ctx.arc(px,py,(this.drag.glass.d/2)*z,0,7); ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 10; ctx.shadowOffsetY = 5; ctx.strokeStyle=this.drag.glass.color; ctx.lineWidth=1.8*z; if (this.appMode === 'INTERNAL' && this.drag.glass.idx > 0) { ctx.setLineDash([5*z, 5*z]); } ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.arc(px,py,7*z,0,7); ctx.fillStyle="white"; ctx.fill(); ctx.shadowColor = "transparent"; ctx.font=`bold ${10*z}px 'Getinge Sans', sans-serif`; ctx.fillStyle=this.drag.glass.color; ctx.textAlign="center"; ctx.fillText(Math.round(this.drag.glass.d), px, py+(4*z)); } if (!isExp) { const dict = this.i18n[this.uiLang]; const c = {}; this.state.holes.forEach(h => { if(h.glass) c[h.glass.d] = (c[h.glass.d]||0)+1; }); if (this.drag) c[this.drag.glass.d] = (c[this.drag.glass.d]||0)+1; let h_txt = `<b>${dict.injectors} : ${this.state.holes.filter(x=>x.glass).length + (this.drag ? 1 : 0)}</b><br>`; Object.keys(c).sort((a,b)=>b-a).forEach(d => h_txt += `Ø${d}mm : <b>${c[d]} ${dict.pces}</b><br>`); document.getElementById('stats').innerHTML = h_txt; } }
+    }
+
+    onContextMenu(e) { e.preventDefault(); if(!this.state || !this.layout) return; const rect = this.can.getBoundingClientRect(); let mx = (e.clientX - rect.left) * (this.can.width / rect.width); let my = (e.clientY - rect.top) * (this.can.height / rect.height); const z = this.layout.scale; const ox = this.layout.ox; const oy = this.layout.oy; for(let h of this.state.holes) { if(h.glass) { let px = ox + h.x * z; let py = oy + h.y * z; if(Math.sqrt((mx - px)**2 + (my - py)**2) <= (h.glass.d / 2) * z) { h.glass = null; this.updateGlassUi(); this.updateMachineVolet(); this.render(this.ctx, null, null, null, false, {cote: this.appMode === 'INTERNAL'}); break; } } } }
+    onMouseDown(e) { if(e.button !== 0 || !this.state || !this.layout) return; const rect = this.can.getBoundingClientRect(); this.m.x = (e.clientX - rect.left) * (this.can.width / rect.width); this.m.y = (e.clientY - rect.top) * (this.can.height / rect.height); const z = this.layout.scale; const ox = this.layout.ox; const oy = this.layout.oy; for(let h of this.state.holes) { if(h.glass) { let px = ox + h.x * z; let py = oy + h.y * z; if(Math.sqrt((this.m.x - px)**2 + (this.m.y - py)**2) <= (h.glass.d / 2) * z) { this.drag = { glass: h.glass, originHole: h }; h.glass = null; this.render(this.ctx, null, null, null, false, {cote: this.appMode === 'INTERNAL'}); break; } } } }
+    onMouseMove(e) { if(!this.drag) return; const rect = this.can.getBoundingClientRect(); this.m.x = (e.clientX - rect.left) * (this.can.width / rect.width); this.m.y = (e.clientY - rect.top) * (this.can.height / rect.height); this.render(this.ctx, null, null, null, false, {cote: this.appMode === 'INTERNAL'}); }
+    onMouseUp(e) { if(!this.drag) return; let targetHole = null; let minDist = Infinity; const z = this.layout.scale; const ox = this.layout.ox; const oy = this.layout.oy; for(let h of this.state.holes) { let px = ox + h.x * z; let py = oy + h.y * z; let dist = Math.sqrt((this.m.x - px)**2 + (this.m.y - py)**2); if(dist < minDist) { minDist = dist; targetHole = h; } } let snapRadius = Math.max(this.state.ex, this.state.ey) * z; if(targetHole && minDist < snapRadius) { if (targetHole.glass) { let targetGlass = targetHole.glass; targetHole.glass = null; if (this.isSafe(targetHole, this.drag.glass.d, this.state.holes, this.state.wVal, this.state.hVal) && this.isSafe(this.drag.originHole, targetGlass.d, this.state.holes, this.state.wVal, this.state.hVal)) { targetHole.glass = this.drag.glass; this.drag.originHole.glass = targetGlass; } else { targetHole.glass = targetGlass; this.drag.originHole.glass = this.drag.glass; } } else { if (this.isSafe(targetHole, this.drag.glass.d, this.state.holes, this.state.wVal, this.state.hVal)) { targetHole.glass = this.drag.glass; } else { this.drag.originHole.glass = this.drag.glass; } } } else { this.drag.originHole.glass = this.drag.glass; } this.drag = null; this.updateGlassUi(); this.updateMachineVolet(); this.render(this.ctx, null, null, null, false, {cote: this.appMode === 'INTERNAL'}); }
+
+    clearCurrentConfig() { document.getElementById('sd1').value = ""; document.getElementById('sq1').value = ""; for(let i=1; i<=3; i++) { document.getElementById('md'+i).value = ""; document.getElementById('mq'+i).value = ""; } document.querySelectorAll('.spec-qty-input').forEach(i => i.value = "0"); this.state = null; this.ctx.clearRect(0,0,this.can.width,this.can.height); document.getElementById('stats').innerHTML = this.i18n[this.uiLang].waiting; document.getElementById('glassContent').innerHTML = ""; this.updateMachineVolet(); }
+    applyPreset(val) { if(!val) return; const p = this.getPresetDef(val); if(p) { document.getElementById('nx').value = p.nx; document.getElementById('ny').value = p.ny; document.getElementById('ex').value = p.ex; document.getElementById('ey').value = p.ey; document.getElementById('sY').value = p.sy; if (this.appMode === 'CLIENT_MANUAL' || this.appMode === 'CLIENT_AUTO') { this.buildSidebarSpecificList(); } this.draw(); } }
+    setPage(p, isLangSwitch = false) { this.activePage = p; document.getElementById('btnPageUND').className = p === 'SM' ? 'nav-btn active' : 'nav-btn'; document.getElementById('btnPageL').className = p === 'L' ? 'nav-btn active' : 'nav-btn'; const dimH = document.getElementById('dimH'); const dimW = document.getElementById('dimW'); const presetSelect = document.getElementById('presetConfig'); const title = document.getElementById('mainTitle'); const dict = this.i18n[this.uiLang]; let currentPreset = presetSelect.value; let currentH = dimH.value; let currentW = dimW.value; if(p === 'SM') { title.innerText = dict.pageSM; dimH.disabled = true; dimW.disabled = true; if (this.appMode === 'INTERNAL') { presetSelect.innerHTML = `<option value="">${dict.presetOptDef}</option><option value="base13">BASE 13 INJ</option><option value="base20">BASE 20 INJ</option><option value="base49">BASE 49 INJ</option><option value="base60">BASE 60 INJ</option><option value="base64">BASE 64 INJ</option><option value="base100">BASE 100 INJ</option>`; } } else { title.innerText = dict.pageL; dimH.disabled = false; dimW.disabled = false; presetSelect.innerHTML = `<option value="">${dict.presetOptDef}</option><option value="base132L">BASE 132 INJ</option>`; } if (isLangSwitch) { presetSelect.value = currentPreset; dimH.value = currentH; dimW.value = currentW; } else { if(p === 'SM') { dimH.value = "482.9"; dimW.value = "473"; } else { dimH.value = "607.5"; dimW.value = "589"; } presetSelect.value = ""; } if(this.state) this.draw(); }
+    setTab(t) { this.activeTab = t; document.getElementById('ts').className = t==='s'?'tab-btn active':'tab-btn'; document.getElementById('tm').className = t==='m'?'tab-btn active':'tab-btn'; document.getElementById('tt').className = t==='t'?'tab-btn active':'tab-btn'; document.getElementById('cont-s').style.display = t==='s'?'block':'none'; document.getElementById('cont-m').style.display = t==='m'?'block':'none'; document.getElementById('cont-t').style.display = t==='t'?'block':'none'; if (t === 's' || t === 'm') this.clientConfigMode = 'DIAM'; else if (t === 't') this.clientConfigMode = 'TYPE'; this.draw(); }
+
+    getSvgHtmlString(paths) { let inner = paths.map(p => { let fill = p.f === true ? "rgba(49,183,188,0.1)" : (p.f === "solid" ? "#18274a" : "none"); return `<path d="${p.d}" fill="${fill}" stroke="#18274a" stroke-width="${p.w}" stroke-linecap="round" stroke-linejoin="round"/>`; }).join(''); return `<svg viewBox="0 0 100 100" style="width:28px; height:28px; flex-shrink:0;">${inner}</svg>`; }
+
+    updateGlassUi() {
+        if (!this.state || !this.state.holes) return; const container = document.getElementById('glassContent'); container.innerHTML = ""; const dict = this.i18n[this.uiLang];
+        if (this.clientConfigMode === 'TYPE') {
+            let reqCounts = {}; this.state.holes.forEach(h => { if (h.glass && h.glass.reqGrp) { let key = `${h.glass.reqGrp}_${h.glass.reqV}`; if(!reqCounts[key]) reqCounts[key] = { grp: h.glass.reqGrp, v: h.glass.reqV, count: 0, color: h.glass.color, d: h.glass.d }; reqCounts[key].count++; } });
+            let groupsToRender = {}; Object.values(reqCounts).forEach(item => { if(!groupsToRender[item.grp]) groupsToRender[item.grp] = []; groupsToRender[item.grp].push(item); });
+            if(Object.keys(groupsToRender).length === 0) { container.innerHTML = `<div style='text-align:center; padding-top:20px; font-style:italic; opacity:0.5;'>${dict.waiting}</div>`; return;}
+            Object.keys(groupsToRender).forEach(grpId => { const groupDef = this.glassDB.find(g => g.id === grpId); const header = document.createElement('div'); header.className = "glass-cat-title"; header.innerHTML = this.getSvgHtmlString(groupDef.paths) + `<span>${dict[grpId] || grpId}</span>`; container.appendChild(header); let listHtml = ""; groupsToRender[grpId].forEach(item => { let itemDef = groupDef.items.find(i => i.v === item.v); let injDia = itemDef ? itemDef.injDia : 6; let badgeBg = injDia === 8 ? '#f59e0b' : '#31b7bc'; let badgeTxt = injDia === 8 ? '#18274a' : '#ffffff'; listHtml += `<div class="glass-item" style="border-left: 4px solid ${item.color}; background: rgba(255,255,255,0.05);"><span style="padding-left:10px; flex:1;">${item.v}ml <span style="display:inline-block; margin-left:4px; padding: 2px 4px; border-radius: 4px; background: ${badgeBg}; color: ${badgeTxt}; font-weight: bold; font-size: 0.55rem;">${this.getInjectorText(itemDef?itemDef.inj:'IXC', injDia)}</span></span><span style="color:${item.color}; font-size:0.7rem; font-weight:bold; letter-spacing:0.05em; margin-right: 15px;">(${dict.qty}: ${item.count})</span><span style="color:var(--snow); font-weight:bold; width: 40px; text-align:right;">Ø${item.d}</span></div>`; }); const listCont = document.createElement('div'); listCont.innerHTML = listHtml; container.appendChild(listCont); });
+        } else {
+            const colors = ['#31b7bc','#e11d48','#f59e0b']; let activeRows = []; if(this.activeTab === 's') { let d = parseFloat(document.getElementById('sd1').value); let placed = this.state.holes.filter(h => h.glass && h.glass.color === colors[0]).length; if(d > 0 && placed > 0) activeRows.push({ d: d, color: colors[0], placed: placed }); } else { for(let i=1; i<=3; i++) { let d = parseFloat(document.getElementById('md'+i).value); let placed = this.state.holes.filter(h => h.glass && h.glass.color === colors[i-1]).length; if(d > 0 && placed > 0) activeRows.push({ d: d, color: colors[i-1], placed: placed }); } }
+            if (activeRows.length === 0) { container.innerHTML = `<div style='text-align:center; padding-top:20px; opacity:0.5; font-style:italic;'>${dict.waiting}</div>`; return; } let sortedRows = [...activeRows].sort((a, b) => a.d - b.d); let hasItems = false;
+            this.glassDB.forEach(group => { let groupHtml = ""; let groupHasVisibleItems = false; group.items.forEach(item => { let matchingRow = sortedRows.find(row => item.d <= row.d); if (matchingRow) { groupHasVisibleItems = true; hasItems = true; let badgeBg = item.injDia === 8 ? '#f59e0b' : '#31b7bc'; let badgeTxt = item.injDia === 8 ? '#18274a' : '#ffffff'; groupHtml += `<div class="glass-item" style="border-left: 4px solid ${matchingRow.color}; background: rgba(255,255,255,0.05);"><span style="padding-left:10px; flex:1;">${item.v}ml <span style="display:inline-block; margin-left:4px; padding: 2px 4px; border-radius: 4px; background: ${badgeBg}; color: ${badgeTxt}; font-weight: bold; font-size: 0.55rem;">${this.getInjectorText(item.inj, item.injDia)}</span></span><span style="color:${matchingRow.color}; font-size:0.7rem; font-weight:bold; letter-spacing:0.05em; margin-right: 15px;">(${dict.qty}: ${matchingRow.placed})</span><span style="color:var(--snow); font-weight:bold; width: 40px; text-align:right;">Ø${item.d}</span></div>`; } }); if (groupHasVisibleItems) { const header = document.createElement('div'); header.className = "glass-cat-title"; header.innerHTML = this.getSvgHtmlString(group.paths) + `<span>${dict[group.id] || group.id}</span>`; container.appendChild(header); const listCont = document.createElement('div'); listCont.innerHTML = groupHtml; container.appendChild(listCont); } });
+            if (!hasItems) container.innerHTML = `<div style='text-align:center; padding-top:20px; opacity:0.5; font-style:italic;'>Aucune correspondance</div>`;
+        }
+    }
+
+    getCurrentMaxHeight() { let maxH = 50; if (!this.state || !this.state.holes) return maxH; this.state.holes.forEach(h => { if (h.glass && h.glass.reqGrp) { const gDef = this.glassDB.find(g => g.id === h.glass.reqGrp); if (gDef) { const item = gDef.items.find(i => i.v === h.glass.reqV); if(item && item.h > maxH) maxH = item.h; } } }); return maxH; }
+
+    updateMachineVolet() {
+        const container = document.getElementById('machinesContent'); if (!this.state || !this.state.holes || !this.state.holes.some(h => h.glass)) { container.innerHTML = `<div style="text-align:center; padding-top:20px; font-style:italic; opacity:0.5;">Placez de la verrerie pour voir les machines compatibles.</div>`; return; }
+        this.currentMaxGlassH = this.getCurrentMaxHeight(); let html = "";
+        Object.keys(this.machineDB).forEach(macId => {
+            if (this.forcedMachineId && this.forcedMachineId !== macId) return;
+            const mac = this.machineDB[macId]; const validLevels = mac.levels.filter(l => l.maxH >= this.currentMaxGlassH);
+            if (validLevels.length > 0) {
+                let currentLvl = mac.levels.find(l => l.id === this.basketStates[macId]); if (!currentLvl || currentLvl.maxH < this.currentMaxGlassH) { this.basketStates[macId] = validLevels.reduce((prev, curr) => (prev.cy > curr.cy) ? prev : curr).id; currentLvl = mac.levels.find(l => l.id === this.basketStates[macId]); }
+                let svgContent = mac.svgPaths; validLevels.forEach(l => { svgContent += `<line x1="16" y1="${l.cy}" x2="84" y2="${l.cy}" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-dasharray="2,2" class="level-target" data-lvl="${l.id}" data-mac="${macId}"/>`; }); svgContent += `<rect x="16" y="${currentLvl.cy - 3}" width="68" height="6" fill="rgba(49, 183, 188, 0.85)" stroke="#18274a" stroke-width="1" rx="1" class="basket-rect" data-mac="${macId}"/>`; html += `<div class="machine-result-item"><div class="machine-result-title">${mac.name}</div><div class="interactive-svg-container"><svg viewBox="${mac.vBox}">${svgContent}</svg></div></div>`;
+            } else { if (this.forcedMachineId) { html += `<div class="machine-result-item" style="color:#e11d48; text-align:center;"><strong>${mac.name}</strong><br>Hauteur requise (${this.currentMaxGlassH}mm) trop importante.</div>`; } }
+        });
+        if (html === "") { html = `<div style="text-align:center; padding-top:20px; font-style:italic; color:#e11d48;">Aucun laveur compatible avec une hauteur de ${this.currentMaxGlassH}mm.</div>`; } container.innerHTML = html;
+    }
+
+    onSvgMouseDown(e) { if (e.target.classList && e.target.classList.contains('basket-rect')) { e.preventDefault(); this.dragBasket = { mac: e.target.getAttribute('data-mac'), el: e.target, startY: e.clientY, startRectY: parseFloat(e.target.getAttribute('y')), svg: e.target.closest('svg') }; } }
+    onSvgMouseMove(e) { if (this.dragBasket) { let svgRect = this.dragBasket.svg.getBoundingClientRect(); let vBoxHeight = parseFloat(this.machineDB[this.dragBasket.mac].vBox.split(' ')[3]); let scale = vBoxHeight / svgRect.height; let deltaY = (e.clientY - this.dragBasket.startY) * scale; this.dragBasket.el.setAttribute('y', this.dragBasket.startRectY + deltaY); } }
+    onSvgMouseUp(e) { if (this.dragBasket) { let macId = this.dragBasket.mac; let currentY = parseFloat(this.dragBasket.el.getAttribute('y')) + 3; let validLevels = this.machineDB[macId].levels.filter(l => l.maxH >= this.currentMaxGlassH); let closestLevel = validLevels.reduce((prev, curr) => Math.abs(curr.cy - currentY) < Math.abs(prev.cy - currentY) ? curr : prev); this.basketStates[macId] = closestLevel.id; this.dragBasket = null; this.updateMachineVolet(); } }
+
+    setUILanguage(lang) {
+        this.uiLang = lang; document.getElementById('btnLangFr').className = lang === 'fr' ? 'lang-btn active' : 'lang-btn'; document.getElementById('btnLangEn').className = lang === 'en' ? 'lang-btn active' : 'lang-btn';
+        const dict = this.i18n[lang]; document.querySelectorAll('[data-i18n]').forEach(el => { const key = el.getAttribute('data-i18n'); if(dict[key]) el.innerText = dict[key]; });
+        document.getElementById('lblNx').setAttribute('data-tooltip', dict.ttNx); document.getElementById('lblNy').setAttribute('data-tooltip', dict.ttNy); document.getElementById('lblEx').setAttribute('data-tooltip', dict.ttEx); document.getElementById('lblEy').setAttribute('data-tooltip', dict.ttEy); document.getElementById('lblSy').setAttribute('data-tooltip', dict.ttSy); document.getElementById('lblMb').setAttribute('data-tooltip', dict.ttMb); document.getElementById('lblQuin').setAttribute('data-tooltip', dict.ttQuin); document.getElementById('stats').setAttribute('data-tooltip', dict.ttStats);
+        if(document.getElementById('lblExpert')) document.getElementById('lblExpert').setAttribute('data-tooltip', dict.ttExpert); if(document.getElementById('lblExpertAuto')) document.getElementById('lblExpertAuto').setAttribute('data-tooltip', dict.ttExpert); document.getElementById('expLang').value = lang;
+        let autoState = {}; document.querySelectorAll('.auto-glass-input').forEach(inp => autoState[inp.id] = inp.value); this.buildAutoGlasswarePopupList(); document.querySelectorAll('.auto-glass-input').forEach(inp => { if(autoState[inp.id]) inp.value = autoState[inp.id]; }); this.updateAutoSummary();
+        if (this.appMode === 'CLIENT_MANUAL' || this.appMode === 'CLIENT_AUTO') { let sideState = {}; document.querySelectorAll('.spec-qty-input').forEach(inp => sideState[inp.id] = inp.value); this.buildSidebarSpecificList(); document.querySelectorAll('.spec-qty-input').forEach(inp => { if(sideState[inp.id]) inp.value = sideState[inp.id]; }); }
+        if (this.appMode !== 'LANDING' && this.appMode !== 'CLIENT_MENU') { this.setPage(this.activePage, true); }
+        if(document.getElementById('expTitle').value === this.i18n.fr.defaultTitle || document.getElementById('expTitle').value === this.i18n.en.defaultTitle) { document.getElementById('expTitle').value = dict.defaultTitle; }
+        if(document.getElementById('exportModal').style.display === 'flex') this.updatePreview();
+    }
+
+    generateExportCanvas(visualTitle, orient, lang, opts) {
+        if(!this.state) return null; const t = this.i18n[lang], e = document.createElement('canvas'); e.width = orient === 'p' ? 2400 : 3600; e.height = orient === 'p' ? 10000 : 2400; const ex = e.getContext('2d'); ex.fillStyle = "white"; ex.fillRect(0, 0, e.width, e.height); 
+        let cartX, cartY, cartW, cartMinH, baskX, baskY, baskMaxW, baskMaxH, logoX, logoY, logoW = 800;
+        if (orient === 'p') { cartX = 150; cartY = 2400; cartW = 2100; cartMinH = 1000; baskX = 150; baskY = 450; baskMaxW = 2100; baskMaxH = 1850; logoX = (e.width - logoW) / 2; logoY = 80; } else { cartX = 2200; cartY = 150; cartW = 1250; cartMinH = 2100; baskX = 150; baskY = 480; baskMaxW = 2150; baskMaxH = 1770; logoX = baskX + (baskMaxW - logoW) / 2; logoY = 100; }
+        if (this.logoImg && this.logoImg.complete && this.logoImg.naturalWidth > 0) { const aspect = this.logoImg.naturalHeight / this.logoImg.naturalWidth || 0.25; ex.drawImage(this.logoImg, logoX, logoY, logoW, logoW * aspect); }
+        const s = Math.min(baskMaxW / this.state.wVal, baskMaxH / this.state.hVal) * 0.95; this.render(ex, s, baskX + (baskMaxW - (this.state.wVal * s)) / 2, baskY + (baskMaxH - (this.state.hVal * s)) / 2, true, opts);
+        ex.textAlign = "left"; const padding = 60; let maxWidth = cartW - (padding * 2); let currY = cartY + 100; currY = this.writeWrappedText(ex, visualTitle.toUpperCase(), cartX + padding, currY, maxWidth, 70, "#18274a"); currY += 20; 
+        if(opts.tech) { currY = this.writeWrappedText(ex, `${t.tech} : L=${this.state.dispW}x P=${this.state.hVal}`, cartX + padding, currY, maxWidth, 48, "#495a6b"); currY = this.writeWrappedText(ex, `X=${this.state.nx}x${this.state.ex}mm | Y=${this.state.ny}x${this.state.ey}mm`, cartX + padding, currY, maxWidth, 48, "#495a6b"); }
+        const counts = {}; this.state.holes.forEach(h => { if(h.glass) counts[h.glass.d] = (counts[h.glass.d]||0)+1; }); let sum = `${t.verreries.split(' ')[0]} : `; Object.keys(counts).forEach(d => sum += `Ø${d}(${counts[d]}${t.pces}) `); currY = this.writeWrappedText(ex, sum, cartX + padding, currY + 15, maxWidth, 52, "#18274a");
+        if(opts.comp && this.state.holes.some(h=>h.glass)) {
+            currY += 40; ex.fillStyle = "#31b7bc"; ex.font = "bold 55px 'Getinge Sans', sans-serif"; ex.fillText(this.clientConfigMode === 'TYPE' ? t.reqList.toUpperCase() : t.verreries, cartX + padding, currY); currY += 50;
+            if (this.clientConfigMode === 'TYPE') {
+                let reqCounts = {}; this.state.holes.forEach(h => { if (h.glass && h.glass.reqGrp) { let key = `${h.glass.reqGrp}_${h.glass.reqV}`; if(!reqCounts[key]) reqCounts[key] = { grp: h.glass.reqGrp, v: h.glass.reqV, count: 0, color: h.glass.color, d: h.glass.d }; reqCounts[key].count++; } });
+                let groupsToRender = {}; Object.values(reqCounts).forEach(item => { if(!groupsToRender[item.grp]) groupsToRender[item.grp] = []; groupsToRender[item.grp].push(item); });
+                Object.keys(groupsToRender).forEach(grpId => { const groupDef = this.glassDB.find(g => g.id === grpId); ex.beginPath(); ex.arc(cartX + padding + 15, currY - 15, 18, 0, 2 * Math.PI); ex.fillStyle = "#31b7bc"; ex.fill(); ex.fillStyle = "#18274a"; ex.font = "bold 42px 'Getinge Sans', sans-serif"; ex.fillText(`${t[grpId] || grpId}`, cartX + padding + 45, currY); currY += 45; let startY = currY; let numCols = orient === 'p' ? 2 : 1; let colWidth = orient === 'p' ? (maxWidth / 2) - 20 : maxWidth; let currentColumn = 0; let itemsPerCol = Math.ceil(groupsToRender[grpId].length / numCols); let maxBlockY = currY; groupsToRender[grpId].forEach((item, index) => { if (index > 0 && index % itemsPerCol === 0) { currentColumn++; currY = startY; } let itemX = cartX + padding + (currentColumn * (maxWidth / 2 + 20)); if (currY < e.height - 80) { this.drawCanvasIcon(ex, groupDef.paths, itemX, currY - 32, 42); let itemDef = groupDef.items.find(i => i.v === item.v); let injText = this.getInjectorText(itemDef?itemDef.inj:'IXC', itemDef?itemDef.injDia:6); let textY = this.writeWrappedText(ex, `${item.v}ml (Ø${item.d}) [${injText}] : ${item.count} ${t.pces}`, itemX + 42 + 20, currY, colWidth - 42 - 20, 36, "#495a6b"); currY = textY + 5; if (currY > maxBlockY) maxBlockY = currY; } }); currY = maxBlockY + 25; });
+            } else {
+                let activeRows = []; const colors = ['#31b7bc','#e11d48','#f59e0b']; if(this.activeTab === 's') { let d = parseFloat(document.getElementById('sd1').value); let placed = this.state.holes.filter(h => h.glass && h.glass.color === colors[0]).length; if(d > 0 && placed > 0) activeRows.push({ d: d, color: colors[0], placed: placed }); } else { for(let i=1; i<=3; i++) { let d = parseFloat(document.getElementById('md'+i).value); let placed = this.state.holes.filter(h => h.glass && h.glass.color === colors[i-1]).length; if(d > 0 && placed > 0) activeRows.push({ d: d, color: colors[i-1], placed: placed }); } } let sortedRows = [...activeRows].sort((a, b) => a.d - b.d);
+                sortedRows.forEach(row => { let rowGlassList = []; this.glassDB.forEach(group => { let itemsForExport = []; group.items.forEach(item => { let matchingRow = sortedRows.find(r => item.d <= r.d); if (matchingRow && matchingRow.d === row.d) { let injText = this.getInjectorText(item.inj, item.injDia); itemsForExport.push(`${item.v}ml (Ø${item.d}) [${injText}]`); } }); if(itemsForExport.length > 0) rowGlassList.push({ name: t[group.id] || group.id, listStr: itemsForExport.join(', '), paths: group.paths }); }); if(rowGlassList.length > 0) { ex.beginPath(); ex.arc(cartX + padding + 15, currY - 15, 18, 0, 2 * Math.PI); ex.fillStyle = row.color; ex.fill(); ex.fillStyle = "#18274a"; ex.font = "bold 42px 'Getinge Sans', sans-serif"; ex.fillText(`${t.forVal} Ø${row.d}mm (${row.placed} ${t.pces})`, cartX + padding + 45, currY); currY += 45; let startY = currY; let numCols = orient === 'p' ? 2 : 1; let colWidth = orient === 'p' ? (maxWidth / 2) - 20 : maxWidth; let currentColumn = 0; let itemsPerCol = Math.ceil(rowGlassList.length / numCols); let maxBlockY = currY; rowGlassList.forEach((glass, index) => { if (index > 0 && index % itemsPerCol === 0) { currentColumn++; currY = startY; } let itemX = cartX + padding + (currentColumn * (maxWidth / 2 + 20)); if (currY < e.height - 80) { this.drawCanvasIcon(ex, glass.paths, itemX, currY - 32, 42); let textY = this.writeWrappedText(ex, `${glass.name}: ${glass.listStr}`, itemX + 42 + 20, currY, colWidth - 42 - 20, 36, "#495a6b"); currY = textY + 5; if (currY > maxBlockY) maxBlockY = currY; } }); currY = maxBlockY + 25; } });
+            }
+        }
+        let finalCartH = currY - cartY + 40; finalCartH = Math.max(finalCartH, cartMinH); ex.strokeStyle = "#18274a"; ex.lineWidth = 15; ex.strokeRect(cartX, cartY, cartW, finalCartH); let finalHeight = orient === 'p' ? cartY + finalCartH + 100 : e.height; let cropCanvas = document.createElement('canvas'); cropCanvas.width = e.width; cropCanvas.height = finalHeight; cropCanvas.getContext('2d').drawImage(e, 0, 0); return cropCanvas;
+    }
+
+    writeWrappedText(ex, text, x, y, maxWidth, initialSize, color) { let size = initialSize; ex.font = `bold ${size}px 'Getinge Sans', sans-serif`; ex.fillStyle = color; const words = text.split(' '); let line = ''; for(let n = 0; n < words.length; n++) { let testLine = line + words[n] + ' '; if (ex.measureText(testLine).width > maxWidth && n > 0) { ex.fillText(line, x, y); line = words[n] + ' '; y += (size + 10); } else { line = testLine; } } ex.fillText(line, x, y); return y + (size + 15); }
+    drawCanvasIcon(ctx, paths, x, y, size) { ctx.save(); ctx.translate(x, y); ctx.scale(size / 100, size / 100); paths.forEach(p => { const pathObj = new Path2D(p.d); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; if (p.f === true) { ctx.fillStyle = "rgba(49,183,188,0.2)"; ctx.fill(pathObj); } else if (p.f === "solid") { ctx.fillStyle = "#18274a"; ctx.fill(pathObj); } ctx.strokeStyle = "#18274a"; ctx.lineWidth = p.w; ctx.stroke(pathObj); }); ctx.restore(); }
+    
+    openExportPopup() { const isInternal = (this.appMode === 'INTERNAL'); document.getElementById('lblExpCote').style.display = isInternal ? 'flex' : 'none'; if (!isInternal) { document.getElementById('expShowCote').checked = false; } else { document.getElementById('expShowCote').checked = true; } document.getElementById('exportModal').style.display = 'flex'; this.updatePreview(); }
+    updatePreview() { const canvas = this.generateExportCanvas(document.getElementById('expTitle').value || "Projet", document.getElementById('expOrientation').value, document.getElementById('expLang').value, { cote: document.getElementById('expShowCote').checked, tech: document.getElementById('expShowTech').checked, comp: document.getElementById('expShowComp').checked }); if(canvas) document.getElementById('previewImg').src = canvas.toDataURL("image/jpeg", 0.5); }
+    
+    processExport() {
+        const title = document.getElementById('expTitle').value || "Projet"; const orient = document.getElementById('expOrientation').value; const lang = document.getElementById('expLang').value; const format = document.getElementById('expFormat').value; const canvas = this.generateExportCanvas(title, orient, lang, { cote: document.getElementById('expShowCote').checked, tech: document.getElementById('expShowTech').checked, comp: document.getElementById('expShowComp').checked });
+        if(canvas) {
+            const safeTitle = title.replace(/\//g, '_');
+            if (format === 'png') { const link = document.createElement('a'); link.download = safeTitle + ".png"; link.href = canvas.toDataURL("image/png", 1.0); link.click(); } 
+            else if (format === 'pdf') {
+                if (window.jspdf && window.jspdf.jsPDF) { const { jsPDF } = window.jspdf; const pdf = new jsPDF(orient === 'p' ? 'p' : 'l', 'mm', 'a4'); const imgData = canvas.toDataURL("image/jpeg", 0.98); const pdfW = pdf.internal.pageSize.getWidth(); const pdfH = pdf.internal.pageSize.getHeight(); const imgRatio = canvas.width / canvas.height; const pdfRatio = pdfW / pdfH; let drawW = pdfW; let drawH = pdfH; if (imgRatio > pdfRatio) { drawH = pdfW / imgRatio; } else { drawW = pdfH * imgRatio; } pdf.addImage(imgData, 'JPEG', (pdfW - drawW) / 2, (pdfH - drawH) / 2, drawW, drawH); pdf.save(safeTitle + ".pdf"); } else { alert("Erreur PDF."); }
+            }
+        }
+        if(document.getElementById('expSaveHtml').checked) this.exportHTML(title.replace(/\//g, '_'));
+        this.closePopups();
+    }
+
+    exportHTML(fileName) {
+        document.querySelectorAll('input, select').forEach(el => { if (el.type === 'checkbox') el.checked ? el.setAttribute('checked', 'checked') : el.removeAttribute('checked'); else if (el.tagName === 'SELECT') Array.from(el.options).forEach(o => o.selected ? o.setAttribute('selected', 'selected') : o.removeAttribute('selected')); else el.setAttribute('value', el.value); });
+        document.body.setAttribute('data-appmode', this.appMode); document.body.setAttribute('data-configmode', this.clientConfigMode); document.body.setAttribute('data-expert', this.expertMode); document.body.setAttribute('data-tab', this.activeTab); document.body.setAttribute('data-page', this.activePage); if(this.forcedMachineId) document.body.setAttribute('data-forcedmac', this.forcedMachineId); document.getElementById('exportModal').style.display = 'none';
+        const link = document.createElement('a'); link.download = fileName + ".html"; link.href = URL.createObjectURL(new Blob(["<!DOCTYPE html>\n" + document.documentElement.outerHTML], {type: "text/html"})); link.click();
+    }
+}
+window.onload = function() { window.app = new EvolabApp(); };
+</script>
+
+<div class="history-wrapper" style="display:none;">
+    <h2>Historique des Versions (Changelog)</h2>
+    <ul>
+        <li><strong>V19.0 à V19.9 :</strong> Architecture Multi-Modes. Création de l'Auto-Solver. Drag & Drop Swap.</li>
+        <li><strong>V20.1 à V20.6 :</strong> Restauration de l'export HTML avec sauvegarde totale du DOM. Logique mathématique PDF.</li>
+        <li><strong>V21.0 (Architecture Laveur & D&D Collision) :</strong> Création du système de Volets latéraux. Intégration de la BDD Laveurs (Undercounter, Middle Size, Premium) en SVG épuré. Ajout du moteur d'évaluation des hauteurs (Axe Z). Panier cyan déplaçable par Drag&Drop entre les niveaux. 3ème flux de configuration client : Choix du laveur initial forçant la restriction de hauteur maximale.</li>
+    </ul>
+</div>
+
+</body>
+</html>
